@@ -1,1 +1,28 @@
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# Testing
+/coverage
+
+# Production
+/build
+/dist
+/tmp
+/out
+
+# Environment variables
+.env
+.env.development
+.env.production
+
+# Misc
+.DS_Store
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+# Editors/OS files
 .claude/
+.idea/
+.vscode/
