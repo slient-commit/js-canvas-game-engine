@@ -1,0 +1,217 @@
+{
+  "version": 1,
+  "name": "Space Shooter",
+  "filePath": null,
+  "settings": {
+    "canvasWidth": 480,
+    "canvasHeight": 640,
+    "backgroundColor": "#050510",
+    "displayFPS": true,
+    "jumpEngineIntro": true
+  },
+  "scenes": [
+    {
+      "id": "scene_main",
+      "name": "GameScene",
+      "isDefault": true,
+      "camera": null,
+      "layers": [
+        {
+          "id": "layer_bg",
+          "name": "background",
+          "zOrder": 0,
+          "isUI": false,
+          "gameObjects": [],
+          "elements": [
+            {
+              "id": "el_star1",
+              "type": "element",
+              "name": "Star1",
+              "position": { "X": 50, "Y": 100 },
+              "opacity": 0.6,
+              "showIt": true,
+              "sprite": { "type": "sprite", "width": 4, "height": 4, "path": "assets/sprites/star.png" }
+            },
+            {
+              "id": "el_star2",
+              "type": "element",
+              "name": "Star2",
+              "position": { "X": 200, "Y": 50 },
+              "opacity": 0.4,
+              "showIt": true,
+              "sprite": { "type": "sprite", "width": 4, "height": 4, "path": "assets/sprites/star.png" }
+            },
+            {
+              "id": "el_star3",
+              "type": "element",
+              "name": "Star3",
+              "position": { "X": 350, "Y": 200 },
+              "opacity": 0.8,
+              "showIt": true,
+              "sprite": { "type": "sprite", "width": 4, "height": 4, "path": "assets/sprites/star.png" }
+            },
+            {
+              "id": "el_star4",
+              "type": "element",
+              "name": "Star4",
+              "position": { "X": 120, "Y": 350 },
+              "opacity": 0.5,
+              "showIt": true,
+              "sprite": { "type": "sprite", "width": 4, "height": 4, "path": "assets/sprites/star.png" }
+            },
+            {
+              "id": "el_star5",
+              "type": "element",
+              "name": "Star5",
+              "position": { "X": 400, "Y": 450 },
+              "opacity": 0.7,
+              "showIt": true,
+              "sprite": { "type": "sprite", "width": 4, "height": 4, "path": "assets/sprites/star.png" }
+            },
+            {
+              "id": "el_star6",
+              "type": "element",
+              "name": "Star6",
+              "position": { "X": 280, "Y": 520 },
+              "opacity": 0.3,
+              "showIt": true,
+              "sprite": { "type": "sprite", "width": 4, "height": 4, "path": "assets/sprites/star.png" }
+            }
+          ]
+        },
+        {
+          "id": "layer_enemies",
+          "name": "enemies",
+          "zOrder": 1,
+          "isUI": false,
+          "gameObjects": [
+            {
+              "id": "go_enemy1",
+              "type": "gameobject",
+              "name": "Enemy1",
+              "position": { "X": 80, "Y": 60 },
+              "velocity": { "X": 0, "Y": 0 },
+              "opacity": 1,
+              "showIt": true,
+              "isStatic": false,
+              "sprite": { "type": "sprite", "width": 32, "height": 32, "path": "assets/sprites/enemy.png" }
+            },
+            {
+              "id": "go_enemy2",
+              "type": "gameobject",
+              "name": "Enemy2",
+              "position": { "X": 200, "Y": 40 },
+              "velocity": { "X": 0, "Y": 0 },
+              "opacity": 1,
+              "showIt": true,
+              "isStatic": false,
+              "sprite": { "type": "sprite", "width": 32, "height": 32, "path": "assets/sprites/enemy.png" }
+            },
+            {
+              "id": "go_enemy3",
+              "type": "gameobject",
+              "name": "Enemy3",
+              "position": { "X": 320, "Y": 70 },
+              "velocity": { "X": 0, "Y": 0 },
+              "opacity": 1,
+              "showIt": true,
+              "isStatic": false,
+              "sprite": { "type": "sprite", "width": 32, "height": 32, "path": "assets/sprites/enemy.png" }
+            },
+            {
+              "id": "go_enemy4",
+              "type": "gameobject",
+              "name": "Enemy4",
+              "position": { "X": 140, "Y": 130 },
+              "velocity": { "X": 0, "Y": 0 },
+              "opacity": 1,
+              "showIt": true,
+              "isStatic": false,
+              "sprite": { "type": "sprite", "width": 32, "height": 32, "path": "assets/sprites/enemy.png" }
+            },
+            {
+              "id": "go_enemy5",
+              "type": "gameobject",
+              "name": "Enemy5",
+              "position": { "X": 260, "Y": 120 },
+              "velocity": { "X": 0, "Y": 0 },
+              "opacity": 1,
+              "showIt": true,
+              "isStatic": false,
+              "sprite": { "type": "sprite", "width": 32, "height": 32, "path": "assets/sprites/enemy.png" }
+            }
+          ],
+          "elements": []
+        },
+        {
+          "id": "layer_player",
+          "name": "player",
+          "zOrder": 2,
+          "isUI": false,
+          "gameObjects": [
+            {
+              "id": "go_player",
+              "type": "gameobject",
+              "name": "Player",
+              "position": { "X": 224, "Y": 560 },
+              "velocity": { "X": 0, "Y": 0 },
+              "opacity": 1,
+              "showIt": true,
+              "isStatic": false,
+              "sprite": { "type": "sprite", "width": 32, "height": 32, "path": "assets/sprites/player.png" }
+            },
+            {
+              "id": "go_bullet1",
+              "type": "gameobject",
+              "name": "Bullet",
+              "position": { "X": 236, "Y": 530 },
+              "velocity": { "X": 0, "Y": -300 },
+              "opacity": 1,
+              "showIt": true,
+              "isStatic": false,
+              "sprite": { "type": "sprite", "width": 8, "height": 16, "path": "assets/sprites/bullet.png" }
+            }
+          ],
+          "elements": []
+        },
+        {
+          "id": "layer_fx",
+          "name": "effects",
+          "zOrder": 3,
+          "isUI": false,
+          "gameObjects": [],
+          "elements": [
+            {
+              "id": "el_explosion1",
+              "type": "element",
+              "name": "Explosion",
+              "position": { "X": 300, "Y": 180 },
+              "opacity": 0.9,
+              "showIt": true,
+              "sprite": { "type": "sprite", "width": 24, "height": 24, "path": "assets/sprites/explosion.png" }
+            }
+          ]
+        },
+        {
+          "id": "layer_ui",
+          "name": "hud",
+          "zOrder": 10,
+          "isUI": true,
+          "gameObjects": [],
+          "elements": []
+        }
+      ]
+    }
+  ],
+  "assets": {
+    "sprites": [
+      { "key": "player", "filename": "player.png" },
+      { "key": "enemy", "filename": "enemy.png" },
+      { "key": "bullet", "filename": "bullet.png" },
+      { "key": "enemy_bullet", "filename": "enemy_bullet.png" },
+      { "key": "star", "filename": "star.png" },
+      { "key": "explosion", "filename": "explosion.png" }
+    ],
+    "audio": []
+  }
+}

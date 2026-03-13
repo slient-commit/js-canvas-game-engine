@@ -1,0 +1,23 @@
+appId: com.jcge.editor
+productName: JCGE Editor
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist/**/*
+  - src/main/**/*
+  - public/**/*
+extraResources:
+  - from: ../src/engine
+    to: engine
+    filter:
+      - "**/*"
+win:
+  target: nsis
+  icon: build/icon.ico
+mac:
+  target: dmg
+  icon: build/icon.icns
+linux:
+  target: AppImage
+  icon: build/icon.png
