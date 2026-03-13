@@ -8,6 +8,7 @@ class Scene {
         this.gameObjects = [];
         this.currentCamera = null;
         this.layers = [];
+        this._incomingData = null;
         this.registerLayer(new Layer('ground'));
     }
 
@@ -57,7 +58,7 @@ class Scene {
             return _layer.layer.name !== layer.name;
         });
         // set the zOrder of the other layers
-        for (var i = 0; this.layers.length; i++) {
+        for (var i = 0; i < this.layers.length; i++) {
             this.layers[i].zOrder = i;
             this.layers[i].layer.z_order = i;
         };
@@ -100,6 +101,14 @@ class Scene {
         }
 
         return null;
+    }
+
+    /**
+     * Get data passed from a previous scene via goToScene
+     * @returns {Object|null}
+     */
+    getIncomingData() {
+        return this._incomingData;
     }
 
     /**

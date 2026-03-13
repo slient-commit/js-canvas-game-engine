@@ -2,11 +2,19 @@ class Drawer {
 
     constructor(canvas) {
         this.canvas = canvas;
+        this.ctx = canvas.getContext("2d");
+        this.resize();
+        window.addEventListener('resize', this.resize.bind(this));
+    }
+
+    /**
+     * Resize canvas to fill window
+     */
+    resize() {
         this.canvas.width = window.innerWidth;
         this.canvas.height = window.innerHeight;
         this.canvas.style.width = window.innerWidth + 'px';
         this.canvas.style.height = window.innerHeight + 'px';
-        this.ctx = canvas.getContext("2d");
     }
 
     /**
@@ -69,11 +77,13 @@ class Drawer {
             if (position.X >= camera.position.X && (position.X + sprite.width) <= camera.maxPosition.X && position.Y >= camera.position.Y && position.Y <= camera.maxPosition.Y) {
                 if (camera.addOffset) {
                     this.ctx.drawImage(sprite.image, position.X + camera.offset.X, position.Y + camera.offset.Y);
+                    this.ctx.globalAlpha = 1.0;
                     return true;
                 }
             }
         }
         this.ctx.drawImage(sprite.image, 0, 0, sprite.image.width, sprite.image.height, position.X, position.Y, sprite.width, sprite.height);
+        this.ctx.globalAlpha = 1.0;
         return true;
     }
 
@@ -98,6 +108,7 @@ class Drawer {
                             this.ctx.fillText(lines[i], position.X + camera.offset.X, (position.Y + (15 * i)) + camera.offset.Y);
                     } else
                         this.ctx.fillText(text, position.X + camera.offset.X, position.Y + camera.offset.Y);
+                    this.ctx.globalAlpha = 1.0;
                     return true;
                 }
             }
@@ -107,6 +118,7 @@ class Drawer {
                 this.ctx.fillText(lines[i], position.X, (position.Y + (15 * i)));
         } else
             this.ctx.fillText(text, position.X, position.Y);
+        this.ctx.globalAlpha = 1.0;
         return true;
     }
 
@@ -146,11 +158,13 @@ class Drawer {
             if (position.X >= camera.position.X && (position.X + sprite.width) <= camera.maxPosition.X && position.Y >= camera.position.Y && position.Y <= camera.maxPosition.Y) {
                 if (camera.addOffset) {
                     this.ctx.drawImage(sprite.image, sprite.frame().X, sprite.frame().Y, sprite.width, sprite.height, position.X + camera.offset.X, position.Y + camera.offset.Y, sprite.width, sprite.height);
+                    this.ctx.globalAlpha = 1.0;
                     return true;
                 }
             }
         }
         this.ctx.drawImage(sprite.image, sprite.frame().X, sprite.frame().Y, sprite.width, sprite.height, position.X, position.Y, sprite.width, sprite.height);
+        this.ctx.globalAlpha = 1.0;
         return true;
     }
 
@@ -206,22 +220,24 @@ class Drawer {
         this.ctx.globalAlpha = opacity;
         if (camera !== null) {
             camera.updateMaxPosition();
-            if (point1.X >= camera.position.X && point1.Y <= camera.position.Y && point2.X <= camera.maxPosition.X && point2.Y <= camera.maxPosition.Y) {
+            if (point1.X >= camera.position.X && point1.Y >= camera.position.Y && point2.X <= camera.maxPosition.X && point2.Y <= camera.maxPosition.Y) {
                 if (camera.addOffset) {
-                    // draw a red line
                     this.ctx.beginPath();
                     this.ctx.moveTo(point1.X + camera.offset.X, point1.Y + camera.offset.Y);
                     this.ctx.lineTo(point2.X + camera.offset.X, point2.Y + camera.offset.Y);
                     this.ctx.stroke();
+                    this.ctx.globalAlpha = 1.0;
                     return true;
                 }
             }
+            this.ctx.globalAlpha = 1.0;
+            return false;
         }
-        // draw a red line
         this.ctx.beginPath();
         this.ctx.moveTo(point1.X, point1.Y);
         this.ctx.lineTo(point2.X, point2.Y);
         this.ctx.stroke();
+        this.ctx.globalAlpha = 1.0;
         return true;
     }
 
@@ -244,25 +260,35 @@ class Drawer {
         this.ctx.filter = filter;
         if (camera !== null) {
             camera.updateMaxPosition();
-            if (position.X >= camera.position.X && position.Y <= camera.position.Y && position.X <= camera.maxPosition.X && position.Y <= camera.maxPosition.Y) {
+            if (position.X >= camera.position.X && position.Y >= camera.position.Y && position.X <= camera.maxPosition.X && position.Y <= camera.maxPosition.Y) {
                 if (camera.addOffset) {
                     if (filled) {
                         this.ctx.fillRect(position.X + camera.offset.X, position.Y + camera.offset.Y, size.width, size.height);
+                        this.ctx.globalAlpha = 1.0;
+                        this.ctx.filter = 'none';
                         return true;
                     }
                     this.ctx.strokeRect(position.X + camera.offset.X, position.Y + camera.offset.Y, size.width, size.height);
+                    this.ctx.globalAlpha = 1.0;
+                    this.ctx.filter = 'none';
                     return true;
                 }
-
             }
+            this.ctx.globalAlpha = 1.0;
+            this.ctx.filter = 'none';
+            return false;
         }
 
         if (filled) {
             this.ctx.fillRect(position.X, position.Y, size.width, size.height);
+            this.ctx.globalAlpha = 1.0;
+            this.ctx.filter = 'none';
             return true;
         }
 
         this.ctx.strokeRect(position.X, position.Y, size.width, size.height);
+        this.ctx.globalAlpha = 1.0;
+        this.ctx.filter = 'none';
         return true;
     }
 
@@ -289,33 +315,39 @@ class Drawer {
         }
         if (camera !== null) {
             camera.updateMaxPosition();
-            if (position.X >= camera.position.X && position.Y <= camera.position.Y && position.X <= camera.maxPosition.X && position.Y <= camera.maxPosition.Y) {
+            if (position.X >= camera.position.X && position.Y >= camera.position.Y && position.X <= camera.maxPosition.X && position.Y <= camera.maxPosition.Y) {
                 if (camera.addOffset) {
                     if (filled) {
                         this.ctx.beginPath();
                         this.ctx.arc(position.X + camera.offset.X, position.Y + camera.offset.Y, reduis, startAngele, endAngle);
                         this.ctx.fill();
+                        this.ctx.globalAlpha = 1.0;
                         return true;
                     }
 
                     this.ctx.beginPath();
                     this.ctx.arc(position.X + camera.offset.X, position.Y + camera.offset.Y, reduis, startAngele, endAngle);
                     this.ctx.stroke();
+                    this.ctx.globalAlpha = 1.0;
                     return true;
                 }
             }
+            this.ctx.globalAlpha = 1.0;
+            return false;
         }
 
         if (filled) {
             this.ctx.beginPath();
             this.ctx.arc(position.X, position.Y, reduis, startAngele, endAngle);
             this.ctx.fill();
+            this.ctx.globalAlpha = 1.0;
             return true;
         }
 
         this.ctx.beginPath();
         this.ctx.arc(position.X, position.Y, reduis, startAngele, endAngle);
         this.ctx.stroke();
+        this.ctx.globalAlpha = 1.0;
         return true;
     }
 
@@ -341,16 +373,19 @@ class Drawer {
         this.ctx.fillStyle = gradient;
         if (camera !== null) {
             camera.updateMaxPosition();
-            if (position.X >= camera.position.X && position.Y <= camera.position.Y && position.X <= camera.maxPosition.X && position.Y <= camera.maxPosition.Y) {
+            if (position.X >= camera.position.X && position.Y >= camera.position.Y && position.X <= camera.maxPosition.X && position.Y <= camera.maxPosition.Y) {
                 if (camera.addOffset) {
                     this.ctx.fillRect(position.X + camera.offset.X, position.Y + camera.offset.Y, size.width, size.height);
+                    this.ctx.globalAlpha = 1.0;
                     return true;
                 }
-
             }
+            this.ctx.globalAlpha = 1.0;
+            return false;
         }
 
         this.ctx.fillRect(position.X, position.Y, size.width, size.height);
+        this.ctx.globalAlpha = 1.0;
         return true;
     }
 
@@ -406,10 +441,59 @@ class Drawer {
         }
 
         if (element.sprite instanceof SpriteSheet) {
-            this.spriteSheet(element.split, element.position, opacity, camera);
+            this.spriteSheet(element.sprite, element.position, opacity, camera);
             return true;
         }
 
         return false;
+    }
+
+    /**
+     * Draw a sprite rotated around its center
+     * @param {Sprite} sprite
+     * @param {Vec2} position
+     * @param {number} angle - rotation in radians
+     * @param {number} opacity
+     */
+    drawRotated(sprite, position, angle, opacity = 1) {
+        if (!sprite || !sprite.image) return false;
+        this.ctx.save();
+        this.ctx.globalAlpha = opacity;
+        this.ctx.translate(position.X + sprite.width / 2, position.Y + sprite.height / 2);
+        this.ctx.rotate(angle);
+        this.ctx.drawImage(sprite.image, -sprite.width / 2, -sprite.height / 2, sprite.width, sprite.height);
+        this.ctx.restore();
+        return true;
+    }
+
+    /**
+     * Draw a sprite with scaling
+     * @param {Sprite} sprite
+     * @param {Vec2} position
+     * @param {number} scaleX
+     * @param {number} scaleY
+     * @param {number} opacity
+     */
+    drawScaled(sprite, position, scaleX, scaleY, opacity = 1) {
+        if (!sprite || !sprite.image) return false;
+        this.ctx.save();
+        this.ctx.globalAlpha = opacity;
+        this.ctx.translate(position.X + sprite.width / 2, position.Y + sprite.height / 2);
+        this.ctx.scale(scaleX, scaleY);
+        this.ctx.drawImage(sprite.image, -sprite.width / 2, -sprite.height / 2, sprite.width, sprite.height);
+        this.ctx.restore();
+        return true;
+    }
+
+    /**
+     * Draw a sprite flipped horizontally and/or vertically
+     * @param {Sprite} sprite
+     * @param {Vec2} position
+     * @param {boolean} flipX
+     * @param {boolean} flipY
+     * @param {number} opacity
+     */
+    drawFlipped(sprite, position, flipX = false, flipY = false, opacity = 1) {
+        return this.drawScaled(sprite, position, flipX ? -1 : 1, flipY ? -1 : 1, opacity);
     }
 }

@@ -1,0 +1,1061 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JCGE - Documentation</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family:
+          "Segoe UI",
+          system-ui,
+          -apple-system,
+          sans-serif;
+        background: #0a0a1a;
+        color: #ccd6e0;
+        line-height: 1.6;
+      }
+
+      /* --- Layout --- */
+      .layout {
+        display: flex;
+        min-height: 100vh;
+      }
+
+      /* --- Sidebar --- */
+      aside {
+        width: 260px;
+        flex-shrink: 0;
+        background: #0d1020;
+        border-right: 1px solid #1a2030;
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        overflow-y: auto;
+        padding: 1.5rem 0;
+      }
+
+      aside .logo {
+        font-family: monospace;
+        font-size: 1.4rem;
+        color: #00bbff;
+        letter-spacing: 0.15em;
+        padding: 0 1.25rem;
+        margin-bottom: 0.25rem;
+      }
+
+      aside .logo-sub {
+        font-size: 0.7rem;
+        color: #445566;
+        padding: 0 1.25rem;
+        margin-bottom: 1.5rem;
+      }
+
+      aside .nav-section {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        color: #445566;
+        padding: 0.75rem 1.25rem 0.35rem;
+      }
+
+      aside a {
+        display: block;
+        padding: 0.3rem 1.25rem;
+        color: #7799bb;
+        text-decoration: none;
+        font-size: 0.85rem;
+        border-left: 2px solid transparent;
+        transition: all 0.15s;
+      }
+
+      aside a:hover {
+        color: #00bbff;
+        background: rgba(0, 187, 255, 0.04);
+        border-left-color: #00bbff;
+      }
+
+      aside .ext-links {
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+        border-top: 1px solid #1a2030;
+      }
+
+      /* --- Main content --- */
+      main {
+        flex: 1;
+        max-width: 780px;
+        padding: 2.5rem 3rem;
+      }
+
+      h1 {
+        font-size: 1.6rem;
+        color: #e0e8f0;
+        margin-bottom: 0.5rem;
+      }
+
+      h1 + p {
+        color: #667788;
+        margin-bottom: 2rem;
+      }
+
+      h2 {
+        font-size: 1.25rem;
+        color: #c0d0e0;
+        margin-top: 2.5rem;
+        margin-bottom: 0.75rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid #151a2a;
+      }
+
+      h2:first-of-type {
+        border-top: none;
+        padding-top: 0;
+      }
+
+      h3 {
+        font-size: 1rem;
+        color: #aabbcc;
+        margin-top: 1.5rem;
+        margin-bottom: 0.5rem;
+      }
+
+      p {
+        margin-bottom: 0.75rem;
+        color: #99aabb;
+        font-size: 0.9rem;
+      }
+
+      /* --- Code blocks --- */
+      pre {
+        background: #0d1225;
+        border: 1px solid #1a2030;
+        border-radius: 6px;
+        padding: 1rem 1.25rem;
+        overflow-x: auto;
+        margin-bottom: 1rem;
+        font-size: 0.82rem;
+        line-height: 1.55;
+      }
+
+      code {
+        font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
+        color: #b0c4de;
+      }
+
+      p code,
+      li code,
+      td code {
+        background: #111828;
+        border: 1px solid #1a2535;
+        border-radius: 3px;
+        padding: 0.1rem 0.35rem;
+        font-size: 0.82em;
+        color: #00bbff;
+      }
+
+      /* Syntax highlighting (minimal) */
+      .kw {
+        color: #c792ea;
+      } /* keywords */
+      .st {
+        color: #c3e88d;
+      } /* strings */
+      .cm {
+        color: #546e7a;
+      } /* comments */
+      .fn {
+        color: #82aaff;
+      } /* functions */
+      .nb {
+        color: #f78c6c;
+      } /* numbers */
+      .op {
+        color: #89ddff;
+      } /* operators/punctuation */
+
+      /* --- Tables --- */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 1rem;
+        font-size: 0.85rem;
+      }
+
+      th {
+        text-align: left;
+        background: #0d1225;
+        color: #8899aa;
+        font-weight: 600;
+        padding: 0.5rem 0.75rem;
+        border-bottom: 1px solid #1a2535;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+
+      td {
+        padding: 0.45rem 0.75rem;
+        border-bottom: 1px solid #111828;
+        color: #8899aa;
+      }
+
+      td:first-child {
+        color: #b0c4de;
+        font-family: monospace;
+        font-size: 0.82rem;
+      }
+
+      /* --- Lists --- */
+      ul {
+        margin-bottom: 0.75rem;
+        padding-left: 1.25rem;
+      }
+
+      li {
+        margin-bottom: 0.3rem;
+        color: #8899aa;
+        font-size: 0.88rem;
+      }
+
+      /* --- Misc --- */
+      .badge {
+        display: inline-block;
+        background: #0d1a2a;
+        border: 1px solid #1a2535;
+        border-radius: 4px;
+        padding: 0.1rem 0.45rem;
+        font-size: 0.7rem;
+        color: #00bbff;
+        font-family: monospace;
+        margin-right: 0.25rem;
+        vertical-align: middle;
+      }
+
+      .note {
+        background: #0d1828;
+        border-left: 3px solid #00bbff;
+        padding: 0.75rem 1rem;
+        margin-bottom: 1rem;
+        border-radius: 0 4px 4px 0;
+        font-size: 0.85rem;
+        color: #7799bb;
+      }
+
+      hr {
+        border: none;
+        border-top: 1px solid #151a2a;
+        margin: 2rem 0;
+      }
+
+      @media (max-width: 800px) {
+        .layout {
+          flex-direction: column;
+        }
+        aside {
+          width: 100%;
+          height: auto;
+          position: static;
+          border-right: none;
+          border-bottom: 1px solid #1a2030;
+        }
+        main {
+          padding: 1.5rem;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="layout">
+      <!-- ==================== SIDEBAR ==================== -->
+      <aside>
+        <div class="logo">JCGE</div>
+        <div class="logo-sub">JS Canvas Game Engine</div>
+
+        <div class="nav-section">Getting Started</div>
+        <a href="#getting-started">Quick Start</a>
+        <a href="#project-structure">Project Structure</a>
+
+        <div class="nav-section">Core</div>
+        <a href="#engine">Engine</a>
+        <a href="#scene">Scene</a>
+        <a href="#drawer">Drawer</a>
+        <a href="#input">InputManager</a>
+
+        <div class="nav-section">Objects</div>
+        <a href="#vec2">Vec2</a>
+        <a href="#gameobject">GameObject</a>
+        <a href="#sprite">Sprite &amp; SpriteSheet</a>
+        <a href="#layers">Layers</a>
+
+        <div class="nav-section">Camera</div>
+        <a href="#camera">Camera</a>
+        <a href="#worldcamera">WorldCamera</a>
+
+        <div class="nav-section">Systems</div>
+        <a href="#tilemap">Tilemap</a>
+        <a href="#particles">Particles</a>
+        <a href="#tweens">Tweens &amp; Easing</a>
+        <a href="#collision">Collision</a>
+        <a href="#events">EventEmitter</a>
+        <a href="#sound">Sound</a>
+        <a href="#assets">AssetManager</a>
+        <a href="#lighting">Lighting</a>
+        <a href="#debug">Debug Overlay</a>
+
+        <div class="nav-section">Utilities</div>
+        <a href="#game-loader">Game Loader</a>
+        <a href="#rgb">RGB</a>
+        <a href="#size">Size</a>
+        <a href="#keys">Keys &amp; MouseButton</a>
+
+        <div class="ext-links">
+          <a href="../samples/index.html">Samples</a>
+          <a href="../empty-game-project/index.html">Starter Template</a>
+        </div>
+      </aside>
+
+      <!-- ==================== MAIN CONTENT ==================== -->
+      <main>
+        <h1>JCGE Documentation</h1>
+        <p>
+          A lightweight 2D game engine built with vanilla JavaScript and HTML5
+          Canvas. No build tools, no dependencies.
+        </p>
+
+        <!-- ===== GETTING STARTED ===== -->
+        <h2 id="getting-started">Getting Started</h2>
+
+        <p>
+          Create an HTML file, include the engine script, and write your game
+          inside an <code>engineReady</code> listener.
+        </p>
+
+        <pre><code><span class="cm">&lt;!-- index.html --&gt;</span>
+<span class="op">&lt;</span><span class="kw">script</span> <span class="fn">src</span>=<span class="st">"path/to/engine/engine-core.js"</span><span class="op">&gt;&lt;/</span><span class="kw">script</span><span class="op">&gt;</span>
+<span class="op">&lt;</span><span class="kw">canvas</span> <span class="fn">id</span>=<span class="st">"canvas"</span><span class="op">&gt;&lt;/</span><span class="kw">canvas</span><span class="op">&gt;</span>
+<span class="op">&lt;</span><span class="kw">script</span> <span class="fn">src</span>=<span class="st">"game.js"</span><span class="op">&gt;&lt;/</span><span class="kw">script</span><span class="op">&gt;</span></code></pre>
+
+        <pre><code><span class="cm">// game.js</span>
+window.<span class="fn">addEventListener</span>(<span class="st">"engineReady"</span>, <span class="kw">function</span>() {
+    <span class="kw">var</span> canvas = document.<span class="fn">getElementById</span>(<span class="st">"canvas"</span>);
+    <span class="kw">var</span> engine = <span class="kw">new</span> <span class="fn">Engine</span>(canvas);
+
+    engine.jumpEngineIntro = <span class="nb">true</span>;
+    engine.displayFPS = <span class="nb">true</span>;
+
+    engine.OnCreate = <span class="kw">function</span>() {
+        <span class="kw">var</span> scene = <span class="kw">new</span> <span class="fn">MyScene</span>(engine);
+        engine.<span class="fn">registerScene</span>(scene);
+    };
+
+    engine.<span class="fn">start</span>();
+});</code></pre>
+
+        <div class="note">
+          The engine loads its scripts asynchronously. Always define your
+          classes inside the <code>engineReady</code> event listener so that
+          engine classes like <code>Scene</code>, <code>Vec2</code>, etc. are
+          available.
+        </div>
+
+        <!-- ===== PROJECT STRUCTURE ===== -->
+        <h2 id="project-structure">Project Structure</h2>
+
+        <pre><code>src/
+├── engine/
+│   ├── engine-core.js          <span class="cm">— script loader (include this)</span>
+│   ├── engine-parts/
+│   │   ├── engine.js           <span class="cm">— Engine class</span>
+│   │   ├── scene.js            <span class="cm">— Scene class</span>
+│   │   └── layer.js            <span class="cm">— Layer class</span>
+│   ├── buffer/                 <span class="cm">— Drawer, Sprite, SpriteSheet</span>
+│   ├── cameras/                <span class="cm">— FixedCamera, WorldCamera</span>
+│   ├── input/                  <span class="cm">— InputManager</span>
+│   ├── audio/                  <span class="cm">— Sound, SoundManager</span>
+│   ├── animations/             <span class="cm">— Tween, Easing, Animation</span>
+│   ├── particles/              <span class="cm">— ParticleEmitter, Fire</span>
+│   ├── physics/                <span class="cm">— Collision helpers</span>
+│   ├── tilemap/                <span class="cm">— Tileset, Tilemap</span>
+│   ├── lights/                 <span class="cm">— Lighting, LightSpot</span>
+│   ├── assets/                 <span class="cm">— AssetManager</span>
+│   ├── debug/                  <span class="cm">— DebugOverlay</span>
+│   └── util/                   <span class="cm">— Vec2, Size, RGB, buttons, EventEmitter</span>
+├── samples/                    <span class="cm">— demo projects</span>
+└── empty-game-project/         <span class="cm">— starter template</span></code></pre>
+
+        <!-- ===== ENGINE ===== -->
+        <h2 id="engine">Engine</h2>
+
+        <p>
+          The main class. Creates the game loop with
+          <code>requestAnimationFrame</code>, manages scenes, and provides
+          access to all subsystems.
+        </p>
+
+        <pre><code><span class="kw">var</span> engine = <span class="kw">new</span> <span class="fn">Engine</span>(canvas);</code></pre>
+
+        <table>
+          <tr>
+            <th>Property</th>
+            <th>Description</th>
+          </tr>
+          <tr>
+            <td>engine.drawer</td>
+            <td>The <code>Drawer</code> instance for rendering</td>
+          </tr>
+          <tr>
+            <td>engine.input</td>
+            <td>
+              The <code>InputManager</code> for keyboard/mouse/touch/gamepad
+            </td>
+          </tr>
+          <tr>
+            <td>engine.sound</td>
+            <td>The <code>SoundManager</code> for audio</td>
+          </tr>
+          <tr>
+            <td>engine.tweens</td>
+            <td>The <code>TweenManager</code> for animations</td>
+          </tr>
+          <tr>
+            <td>engine.assets</td>
+            <td>The <code>AssetManager</code> for preloading</td>
+          </tr>
+          <tr>
+            <td>engine.debug</td>
+            <td>The <code>DebugOverlay</code> for debug visuals</td>
+          </tr>
+          <tr>
+            <td>engine.displayFPS</td>
+            <td>Show FPS counter (boolean)</td>
+          </tr>
+          <tr>
+            <td>engine.jumpEngineIntro</td>
+            <td>Skip the engine splash screen (boolean)</td>
+          </tr>
+        </table>
+
+        <table>
+          <tr>
+            <th>Method</th>
+            <th>Description</th>
+          </tr>
+          <tr>
+            <td>start()</td>
+            <td>Start the engine game loop</td>
+          </tr>
+          <tr>
+            <td>stop()</td>
+            <td>Stop the engine</td>
+          </tr>
+          <tr>
+            <td>registerScene(scene)</td>
+            <td>Add a scene to the engine</td>
+          </tr>
+          <tr>
+            <td>goToScene(scene, data?, transition?, duration?)</td>
+            <td>Switch to a scene with optional data and transition</td>
+          </tr>
+          <tr>
+            <td>setCanvasSize(w, h)</td>
+            <td>Set canvas dimensions</td>
+          </tr>
+          <tr>
+            <td>screenSize()</td>
+            <td>Returns <code>Size</code> of the canvas</td>
+          </tr>
+        </table>
+
+        <h3>Transitions</h3>
+        <p>Use <code>goToScene</code> with a transition type:</p>
+        <pre><code>engine.<span class="fn">goToScene</span>(scene, { level: <span class="nb">2</span> }, <span class="st">'fade'</span>, <span class="nb">0.5</span>);</code></pre>
+        <p>
+          Types: <code>'none'</code>, <code>'fade'</code>,
+          <code>'slide-left'</code>, <code>'slide-right'</code>
+        </p>
+
+        <!-- ===== SCENE ===== -->
+        <h2 id="scene">Scene</h2>
+
+        <p>
+          Scenes organize your game into screens. Override the lifecycle
+          methods.
+        </p>
+
+        <pre><code><span class="kw">class</span> <span class="fn">GameScene</span> <span class="kw">extends</span> <span class="fn">Scene</span> {
+    <span class="fn">constructor</span>(engine) {
+        <span class="kw">super</span>(<span class="st">'GameScene'</span>, engine);
+    }
+
+    <span class="fn">OnCreate</span>() {
+        <span class="cm">// Runs once when scene becomes active</span>
+    }
+
+    <span class="fn">OnUpdate</span>(elapsedTime) {
+        <span class="cm">// Runs every frame (elapsedTime = seconds since last frame)</span>
+    }
+
+    <span class="fn">OnDestroy</span>() {
+        <span class="cm">// Runs when leaving this scene</span>
+    }
+}</code></pre>
+
+        <table>
+          <tr>
+            <th>Method</th>
+            <th>Description</th>
+          </tr>
+          <tr>
+            <td>registerGameObject(obj)</td>
+            <td>Add a GameObject (auto-drawn by engine)</td>
+          </tr>
+          <tr>
+            <td>registerLayer(layer)</td>
+            <td>Add a rendering layer</td>
+          </tr>
+          <tr>
+            <td>setCamera(camera)</td>
+            <td>Set the scene's camera</td>
+          </tr>
+          <tr>
+            <td>getIncomingData()</td>
+            <td>Get data passed via <code>goToScene</code></td>
+          </tr>
+          <tr>
+            <td>ended()</td>
+            <td>End the scene and move to next</td>
+          </tr>
+        </table>
+
+        <!-- ===== DRAWER ===== -->
+        <h2 id="drawer">Drawer</h2>
+
+        <p>
+          Handles all canvas rendering: shapes, text, sprites, and gradients.
+          Access via <code>engine.drawer</code>.
+        </p>
+
+        <h3>Shapes</h3>
+        <pre><code>drawer.<span class="fn">rectangle</span>(position, size, filled, lineWidth, color, opacity, camera);
+drawer.<span class="fn">circle</span>(position, radius, startAngle, endAngle, filled, lineWidth, color, opacity, camera);
+drawer.<span class="fn">line</span>(point1, point2, lineWidth, color, opacity, camera);
+drawer.<span class="fn">gradient</span>(position, size, startPoint, stopPoint, startColor, stopColor, opacity, camera);</code></pre>
+
+        <h3>Text</h3>
+        <pre><code>drawer.<span class="fn">text</span>(text, position, fontSize, font, style, color, opacity, camera);
+drawer.<span class="fn">textWidth</span>(text, fontSize, font, style); <span class="cm">// returns number</span></code></pre>
+
+        <h3>Sprites</h3>
+        <pre><code>drawer.<span class="fn">sprite</span>(sprite, position, opacity, camera);
+drawer.<span class="fn">spriteSheet</span>(spriteSheet, position, opacity, camera);
+drawer.<span class="fn">gameObject</span>(gameObject, opacity, camera);</code></pre>
+
+        <h3>Transforms</h3>
+        <pre><code>drawer.<span class="fn">drawRotated</span>(sprite, position, angle, opacity);
+drawer.<span class="fn">drawScaled</span>(sprite, position, scaleX, scaleY, opacity);
+drawer.<span class="fn">drawFlipped</span>(sprite, position, flipX, flipY, opacity);</code></pre>
+
+        <h3>Utility</h3>
+        <pre><code>drawer.<span class="fn">clearWithColor</span>(<span class="st">'#000'</span>);
+drawer.<span class="fn">clear</span>();</code></pre>
+
+        <div class="note">
+          When passing a <code>camera</code> parameter, coordinates are in world
+          space and the drawer applies the camera offset automatically. Without
+          a camera, coordinates are in screen space.
+        </div>
+
+        <!-- ===== INPUT ===== -->
+        <h2 id="input">InputManager</h2>
+
+        <p>
+          Provides per-frame edge detection for keyboard, mouse, touch, and
+          gamepad. Access via <code>engine.input</code>.
+        </p>
+
+        <h3>Keyboard</h3>
+        <pre><code>input.<span class="fn">isKeyDown</span>(Keys.W)        <span class="cm">// held down right now</span>
+input.<span class="fn">isKeyPressed</span>(Keys.Space)  <span class="cm">// just pressed this frame</span>
+input.<span class="fn">isKeyReleased</span>(Keys.Escape) <span class="cm">// just released this frame</span></code></pre>
+
+        <h3>Mouse</h3>
+        <pre><code>input.<span class="fn">isMouseDown</span>(<span class="nb">0</span>)       <span class="cm">// 0=left, 1=middle, 2=right</span>
+input.<span class="fn">isMousePressed</span>(<span class="nb">0</span>)    <span class="cm">// just clicked this frame</span>
+input.<span class="fn">isMouseReleased</span>(<span class="nb">0</span>)   <span class="cm">// just released this frame</span>
+input.<span class="fn">getMousePosition</span>()   <span class="cm">// Vec2 relative to canvas</span></code></pre>
+
+        <h3>Touch</h3>
+        <pre><code>input.<span class="fn">isTouchActive</span>()     <span class="cm">// is there a touch on screen?</span></code></pre>
+        <p>
+          Touch events are automatically mapped to mouse events (left button).
+        </p>
+
+        <h3>Gamepad</h3>
+        <pre><code>input.<span class="fn">isGamepadButtonDown</span>(buttonIndex, padIndex)
+input.<span class="fn">getGamepadAxis</span>(axisIndex, padIndex) <span class="cm">// returns -1 to 1</span>
+input.<span class="fn">getGamepad</span>(index)                   <span class="cm">// raw Gamepad object</span></code></pre>
+
+        <!-- ===== VEC2 ===== -->
+        <h2 id="vec2">Vec2</h2>
+
+        <p>
+          2D vector class. <code>Point</code> and <code>Position</code> are
+          aliases for <code>Vec2</code>. Properties are <code>.X</code> and
+          <code>.Y</code>.
+        </p>
+
+        <pre><code><span class="kw">var</span> v = <span class="kw">new</span> <span class="fn">Vec2</span>(<span class="nb">10</span>, <span class="nb">20</span>);</code></pre>
+
+        <table>
+          <tr>
+            <th>Method</th>
+            <th>Returns</th>
+            <th>Description</th>
+          </tr>
+          <tr>
+            <td>add(v)</td>
+            <td>Vec2</td>
+            <td>Component-wise addition</td>
+          </tr>
+          <tr>
+            <td>sub(v)</td>
+            <td>Vec2</td>
+            <td>Component-wise subtraction</td>
+          </tr>
+          <tr>
+            <td>scale(s)</td>
+            <td>Vec2</td>
+            <td>Multiply both components by scalar</td>
+          </tr>
+          <tr>
+            <td>length()</td>
+            <td>number</td>
+            <td>Magnitude</td>
+          </tr>
+          <tr>
+            <td>normalize()</td>
+            <td>Vec2</td>
+            <td>Unit vector</td>
+          </tr>
+          <tr>
+            <td>distance(v)</td>
+            <td>number</td>
+            <td>Distance to another vector</td>
+          </tr>
+          <tr>
+            <td>dot(v)</td>
+            <td>number</td>
+            <td>Dot product</td>
+          </tr>
+          <tr>
+            <td>lerp(v, t)</td>
+            <td>Vec2</td>
+            <td>Linear interpolation (t: 0-1)</td>
+          </tr>
+          <tr>
+            <td>clone()</td>
+            <td>Vec2</td>
+            <td>Copy</td>
+          </tr>
+          <tr>
+            <td>equals(v)</td>
+            <td>boolean</td>
+            <td>Exact equality</td>
+          </tr>
+        </table>
+
+        <p>
+          Static helpers: <code>Vec2.zero()</code>, <code>Vec2.up()</code>,
+          <code>Vec2.down()</code>, <code>Vec2.left()</code>,
+          <code>Vec2.right()</code>
+        </p>
+
+        <!-- ===== GAMEOBJECT ===== -->
+        <h2 id="gameobject">GameObject</h2>
+
+        <p>A positioned sprite with movement and collision.</p>
+
+        <pre><code><span class="kw">var</span> player = <span class="kw">new</span> <span class="fn">GameObject</span>(<span class="kw">new</span> <span class="fn">Sprite</span>(<span class="nb">64</span>, <span class="nb">64</span>), <span class="kw">new</span> <span class="fn">Vec2</span>(<span class="nb">100</span>, <span class="nb">100</span>));
+player.sprite.<span class="fn">loadImage</span>(<span class="st">'player.png'</span>);
+player.velocity = <span class="kw">new</span> <span class="fn">Vec2</span>(<span class="nb">100</span>, <span class="nb">0</span>);
+player.<span class="fn">move</span>(elapsedTime);
+
+<span class="kw">if</span> (player.<span class="fn">collisionWith</span>(enemy)) { <span class="cm">/* AABB collision */</span> }</code></pre>
+
+        <!-- ===== SPRITE ===== -->
+        <h2 id="sprite">Sprite &amp; SpriteSheet</h2>
+
+        <pre><code><span class="cm">// Static sprite</span>
+<span class="kw">var</span> spr = <span class="kw">new</span> <span class="fn">Sprite</span>(width, height);
+spr.<span class="fn">loadImage</span>(<span class="st">'image.png'</span>);
+
+<span class="cm">// Animated spritesheet</span>
+<span class="kw">var</span> sheet = <span class="kw">new</span> <span class="fn">SpriteSheet</span>(<span class="st">'run'</span>, <span class="nb">64</span>, <span class="nb">64</span>, columns, startFrame, endFrame, <span class="st">'sheet.png'</span>);
+
+<span class="cm">// Attach to animation system</span>
+<span class="kw">var</span> anim = <span class="kw">new</span> <span class="fn">Animation</span>();
+anim.<span class="fn">registerAnimation</span>(sheet);
+player.<span class="fn">registerAnimation</span>(anim);
+player.<span class="fn">setAnimation</span>(<span class="st">'run'</span>);</code></pre>
+
+        <!-- ===== LAYERS ===== -->
+        <h2 id="layers">Layers</h2>
+
+        <p>Z-ordered rendering groups within a scene.</p>
+
+        <pre><code><span class="kw">var</span> bgLayer = <span class="kw">new</span> <span class="fn">Layer</span>(<span class="st">'background'</span>);
+bgLayer.<span class="fn">registerElement</span>(bgElement);
+scene.<span class="fn">registerLayer</span>(bgLayer);
+
+<span class="kw">var</span> uiLayer = <span class="kw">new</span> <span class="fn">Layer</span>(<span class="st">'ui'</span>);
+uiLayer.<span class="fn">registerGameObject</span>(cursor);
+scene.<span class="fn">registerLayer</span>(uiLayer);</code></pre>
+
+        <p>
+          Layers are drawn in registration order (first = behind, last = in
+          front).
+        </p>
+
+        <!-- ===== CAMERA ===== -->
+        <h2 id="camera">Camera</h2>
+
+        <pre><code><span class="kw">var</span> cam = <span class="kw">new</span> <span class="fn">Camera</span>(screenW, screenH, worldW, worldH);
+cam.addOffset = <span class="nb">true</span>;  <span class="cm">// enable camera-relative drawing</span>
+scene.<span class="fn">setCamera</span>(cam);</code></pre>
+
+        <h2 id="worldcamera">WorldCamera</h2>
+
+        <p>Extends <code>Camera</code> with smooth follow, shake, and zoom.</p>
+
+        <pre><code><span class="kw">var</span> cam = <span class="kw">new</span> <span class="fn">WorldCamera</span>(screenW, screenH, worldW, worldH);
+cam.addOffset = <span class="nb">true</span>;
+cam.smoothFollow = <span class="nb">true</span>;
+cam.followLerp = <span class="nb">0.1</span>;      <span class="cm">// 0 = no follow, 1 = instant</span>
+
+<span class="cm">// In OnUpdate:</span>
+cam.<span class="fn">setPositionTo</span>(gameObject, elapsedTime);
+cam.<span class="fn">update</span>(elapsedTime);</code></pre>
+
+        <table>
+          <tr>
+            <th>Method</th>
+            <th>Description</th>
+          </tr>
+          <tr>
+            <td>setPositionTo(gameObject, dt)</td>
+            <td>Follow a target with smooth lerp</td>
+          </tr>
+          <tr>
+            <td>shake(intensity, duration)</td>
+            <td>Camera shake effect</td>
+          </tr>
+          <tr>
+            <td>setZoom(level)</td>
+            <td>Set zoom (1.0 = normal)</td>
+          </tr>
+          <tr>
+            <td>update(dt)</td>
+            <td>Update shake and effects (call each frame)</td>
+          </tr>
+        </table>
+
+        <!-- ===== TILEMAP ===== -->
+        <h2 id="tilemap">Tilemap</h2>
+
+        <pre><code><span class="kw">var</span> tileset = <span class="kw">new</span> <span class="fn">Tileset</span>(<span class="st">'tileset.png'</span>, <span class="nb">32</span>, <span class="nb">32</span>);
+<span class="kw">var</span> mapData = [[<span class="nb">0</span>,<span class="nb">1</span>,<span class="nb">2</span>], [<span class="nb">3</span>,<span class="nb">4</span>,<span class="nb">5</span>]];
+<span class="kw">var</span> tilemap = <span class="kw">new</span> <span class="fn">Tilemap</span>(tileset, mapData, cols, rows);</code></pre>
+
+        <table>
+          <tr>
+            <th>Method</th>
+            <th>Description</th>
+          </tr>
+          <tr>
+            <td>draw(drawer, camera)</td>
+            <td>Render visible tiles (auto camera culling)</td>
+          </tr>
+          <tr>
+            <td>setCollisionLayer(data)</td>
+            <td>Set 2D array (1=solid, 0=empty)</td>
+          </tr>
+          <tr>
+            <td>isSolid(col, row)</td>
+            <td>Check if a tile is solid</td>
+          </tr>
+          <tr>
+            <td>isSolidAt(worldX, worldY)</td>
+            <td>Check if world position hits solid tile</td>
+          </tr>
+          <tr>
+            <td>getTileAt(worldX, worldY)</td>
+            <td>Get tile ID at world position</td>
+          </tr>
+          <tr>
+            <td>addLayer(data)</td>
+            <td>Add another tile layer</td>
+          </tr>
+          <tr>
+            <td>worldSize()</td>
+            <td>Returns <code>Size</code> of the full map in pixels</td>
+          </tr>
+        </table>
+
+        <!-- ===== PARTICLES ===== -->
+        <h2 id="particles">Particles</h2>
+
+        <h3>Built-in Presets</h3>
+        <pre><code><span class="kw">var</span> fire      = <span class="fn">ParticleEmitter</span>.<span class="fn">fire</span>(engine, position);
+<span class="kw">var</span> smoke     = <span class="fn">ParticleEmitter</span>.<span class="fn">smoke</span>(engine, position);
+<span class="kw">var</span> explosion = <span class="fn">ParticleEmitter</span>.<span class="fn">explosion</span>(engine, position);
+<span class="kw">var</span> sparkle   = <span class="fn">ParticleEmitter</span>.<span class="fn">sparkle</span>(engine, position);
+
+<span class="cm">// In OnUpdate:</span>
+fire.<span class="fn">draw</span>(elapsedTime);</code></pre>
+
+        <h3>Custom Emitter</h3>
+        <pre><code><span class="kw">var</span> emitter = <span class="kw">new</span> <span class="fn">ParticleEmitter</span>(engine, {
+    position:   <span class="kw">new</span> <span class="fn">Vec2</span>(<span class="nb">100</span>, <span class="nb">100</span>),
+    rate:       <span class="nb">10</span>,           <span class="cm">// particles per emission</span>
+    minSpeed:   <span class="nb">20</span>,  maxSpeed:  <span class="nb">100</span>,
+    minAngle:   <span class="nb">0</span>,   maxAngle:  Math.PI * <span class="nb">2</span>,
+    minLife:    <span class="nb">0.5</span>, maxLife:   <span class="nb">2</span>,
+    minSize:    <span class="nb">2</span>,   maxSize:   <span class="nb">6</span>,
+    startColor: <span class="kw">new</span> <span class="fn">RGB</span>(<span class="nb">255</span>, <span class="nb">200</span>, <span class="nb">50</span>),
+    endColor:   <span class="kw">new</span> <span class="fn">RGB</span>(<span class="nb">255</span>, <span class="nb">50</span>, <span class="nb">0</span>, <span class="nb">0</span>),
+    gravity:    <span class="kw">new</span> <span class="fn">Vec2</span>(<span class="nb">0</span>, <span class="nb">100</span>),
+    shape:      <span class="st">'circle'</span>    <span class="cm">// or 'rectangle'</span>
+});</code></pre>
+
+        <table>
+          <tr>
+            <th>Method</th>
+            <th>Description</th>
+          </tr>
+          <tr>
+            <td>draw(elapsedTime)</td>
+            <td>Update and render all particles</td>
+          </tr>
+          <tr>
+            <td>emit(count)</td>
+            <td>Emit particles manually</td>
+          </tr>
+          <tr>
+            <td>stop()</td>
+            <td>Stop continuous emission</td>
+          </tr>
+          <tr>
+            <td>clear()</td>
+            <td>Remove all particles</td>
+          </tr>
+        </table>
+
+        <!-- ===== TWEENS ===== -->
+        <h2 id="tweens">Tweens &amp; Easing</h2>
+
+        <p>
+          Animate any numeric property on any object. Managed by
+          <code>engine.tweens</code>.
+        </p>
+
+        <pre><code><span class="cm">// Animate position over 1 second</span>
+engine.tweens.<span class="fn">to</span>(player.position, { X: <span class="nb">300</span>, Y: <span class="nb">200</span> }, <span class="nb">1.0</span>, Easing.easeInOut)
+    .<span class="fn">onComplete</span>(<span class="kw">function</span>() { <span class="cm">/* done */</span> });
+
+<span class="cm">// Chain tweens</span>
+engine.tweens.<span class="fn">to</span>(obj, { X: <span class="nb">100</span> }, <span class="nb">0.5</span>, Easing.easeIn)
+    .<span class="fn">then</span>(obj, { Y: <span class="nb">200</span> }, <span class="nb">0.5</span>, Easing.easeOut);</code></pre>
+
+        <h3>Easing Functions</h3>
+        <p>
+          <span class="badge">linear</span>
+          <span class="badge">easeIn</span>
+          <span class="badge">easeOut</span>
+          <span class="badge">easeInOut</span>
+          <span class="badge">easeInCubic</span>
+          <span class="badge">easeOutCubic</span>
+          <span class="badge">easeInOutCubic</span>
+          <span class="badge">bounce</span>
+          <span class="badge">elastic</span>
+        </p>
+
+        <!-- ===== COLLISION ===== -->
+        <h2 id="collision">Collision</h2>
+
+        <p>Static utility functions for collision detection.</p>
+
+        <pre><code><span class="fn">Collision</span>.<span class="fn">rectRect</span>(posA, sizeA, posB, sizeB);
+<span class="fn">Collision</span>.<span class="fn">circleCircle</span>(posA, radiusA, posB, radiusB);
+<span class="fn">Collision</span>.<span class="fn">circleRect</span>(circlePos, radius, rectPos, rectSize);
+<span class="fn">Collision</span>.<span class="fn">pointRect</span>(point, rectPos, rectSize);
+<span class="fn">Collision</span>.<span class="fn">pointCircle</span>(point, circlePos, radius);</code></pre>
+
+        <p>All return <code>true</code> if collision detected.</p>
+
+        <!-- ===== EVENTS ===== -->
+        <h2 id="events">EventEmitter</h2>
+
+        <p>Pub/sub events for decoupled communication.</p>
+
+        <pre><code><span class="kw">var</span> events = <span class="kw">new</span> <span class="fn">EventEmitter</span>();
+events.<span class="fn">on</span>(<span class="st">'scoreChange'</span>, <span class="kw">function</span>(score) { <span class="cm">/* ... */</span> });
+events.<span class="fn">once</span>(<span class="st">'gameOver'</span>, <span class="kw">function</span>() { <span class="cm">/* fires once */</span> });
+events.<span class="fn">emit</span>(<span class="st">'scoreChange'</span>, <span class="nb">100</span>);
+events.<span class="fn">off</span>(<span class="st">'scoreChange'</span>, callback);
+events.<span class="fn">removeAll</span>(<span class="st">'scoreChange'</span>); <span class="cm">// or removeAll() for all events</span></code></pre>
+
+        <!-- ===== SOUND ===== -->
+        <h2 id="sound">Sound</h2>
+
+        <pre><code><span class="cm">// Direct playback</span>
+<span class="kw">var</span> jump = <span class="kw">new</span> <span class="fn">Sound</span>(<span class="st">'jump.mp3'</span>);
+jump.<span class="fn">play</span>();
+
+<span class="cm">// Via SoundManager (recommended)</span>
+engine.sound.<span class="fn">setMasterVolume</span>(<span class="nb">0.8</span>);
+engine.sound.<span class="fn">setMusicVolume</span>(<span class="nb">0.5</span>);
+engine.sound.<span class="fn">setSFXVolume</span>(<span class="nb">1.0</span>);
+engine.sound.<span class="fn">playMusic</span>(bgMusic);   <span class="cm">// looping, stops previous</span>
+engine.sound.<span class="fn">playSFX</span>(jumpSound);    <span class="cm">// one-shot</span>
+engine.sound.<span class="fn">muteAll</span>();
+engine.sound.<span class="fn">unmuteAll</span>();</code></pre>
+
+        <!-- ===== ASSETS ===== -->
+        <h2 id="assets">AssetManager</h2>
+
+        <p>
+          Preload assets before the game starts. Access via
+          <code>engine.assets</code>.
+        </p>
+
+        <pre><code>engine.assets
+    .<span class="fn">loadImage</span>(<span class="st">'player'</span>, <span class="st">'sprites/player.png'</span>)
+    .<span class="fn">loadSound</span>(<span class="st">'jump'</span>, <span class="st">'audio/jump.mp3'</span>)
+    .<span class="fn">onProgress</span>(<span class="kw">function</span>(loaded, total) { })
+    .<span class="fn">onComplete</span>(<span class="kw">function</span>() { engine.<span class="fn">start</span>(); });
+
+engine.assets.<span class="fn">startLoading</span>();
+
+<span class="cm">// Later:</span>
+<span class="kw">var</span> img = engine.assets.<span class="fn">getImage</span>(<span class="st">'player'</span>);
+<span class="kw">var</span> snd = engine.assets.<span class="fn">getSound</span>(<span class="st">'jump'</span>);</code></pre>
+
+        <!-- ===== LIGHTING ===== -->
+        <h2 id="lighting">Lighting</h2>
+
+        <pre><code><span class="kw">var</span> lighting = <span class="kw">new</span> <span class="fn">Lighting</span>(engine, cols, rows, tileSize);
+lighting.<span class="fn">addLightSpot</span>(<span class="kw">new</span> <span class="fn">LightSpot</span>(position, <span class="kw">new</span> <span class="fn">RGB</span>(<span class="nb">255</span>,<span class="nb">255</span>,<span class="nb">200</span>), distance, tension));
+
+<span class="cm">// In OnUpdate:</span>
+lighting.<span class="fn">draw</span>();</code></pre>
+
+        <!-- ===== DEBUG ===== -->
+        <h2 id="debug">Debug Overlay</h2>
+
+        <p>Toggle debug visuals via <code>engine.debug</code>.</p>
+
+        <pre><code>engine.debug.showCollisionBoxes = <span class="nb">true</span>;
+engine.debug.showCameraBounds   = <span class="nb">true</span>;
+engine.debug.showObjectCount    = <span class="nb">true</span>;</code></pre>
+
+        <!-- ===== GAME LOADER ===== -->
+        <h2 id="game-loader">Game Loader</h2>
+
+        <p>
+          For games with many script files, use the loader to load them
+          sequentially after the engine is ready.
+        </p>
+
+        <pre><code><span class="op">&lt;</span><span class="kw">script</span> <span class="fn">src</span>=<span class="st">"engine/engine-core.js"</span><span class="op">&gt;&lt;/</span><span class="kw">script</span><span class="op">&gt;</span>
+<span class="op">&lt;</span><span class="kw">script</span> <span class="fn">src</span>=<span class="st">"engine/game-loader.js"</span><span class="op">&gt;&lt;/</span><span class="kw">script</span><span class="op">&gt;</span>
+<span class="op">&lt;</span><span class="kw">script</span><span class="op">&gt;</span>
+    <span class="fn">loader</span>([
+        { name: <span class="st">"Player"</span>, path: <span class="st">"player.js"</span> },
+        { name: <span class="st">"Scene"</span>,  path: <span class="st">"scenes/game.js"</span> }
+    ]);
+<span class="op">&lt;/</span><span class="kw">script</span><span class="op">&gt;</span></code></pre>
+
+        <p>
+          Then listen for <code>gameReady</code> instead of
+          <code>engineReady</code>:
+        </p>
+        <pre><code>window.<span class="fn">addEventListener</span>(<span class="st">"gameReady"</span>, <span class="kw">function</span>() { ... });</code></pre>
+
+        <!-- ===== RGB ===== -->
+        <h2 id="rgb">RGB</h2>
+
+        <pre><code><span class="kw">var</span> color = <span class="kw">new</span> <span class="fn">RGB</span>(<span class="nb">255</span>, <span class="nb">100</span>, <span class="nb">50</span>, <span class="nb">0.8</span>); <span class="cm">// r, g, b, alpha</span>
+color.<span class="fn">toString</span>();             <span class="cm">// "rgb(255, 100, 50, 0.8)"</span>
+color.<span class="fn">toStringWithoutAlpha</span>(); <span class="cm">// "rgb(255, 100, 50)"</span></code></pre>
+
+        <!-- ===== SIZE ===== -->
+        <h2 id="size">Size</h2>
+
+        <pre><code><span class="kw">var</span> s = <span class="kw">new</span> <span class="fn">Size</span>(<span class="nb">100</span>, <span class="nb">50</span>); <span class="cm">// s.width, s.height</span></code></pre>
+
+        <!-- ===== KEYS ===== -->
+        <h2 id="keys">Keys &amp; MouseButton</h2>
+
+        <p>
+          Constants for input detection. Uses
+          <code>KeyboardEvent.code</code> values.
+        </p>
+
+        <table>
+          <tr>
+            <th>Group</th>
+            <th>Constants</th>
+          </tr>
+          <tr>
+            <td>Arrows</td>
+            <td>
+              <code>Keys.ArrowUp</code>, <code>ArrowDown</code>,
+              <code>ArrowLeft</code>, <code>ArrowRight</code>
+            </td>
+          </tr>
+          <tr>
+            <td>Letters</td>
+            <td><code>Keys.A</code> through <code>Keys.Z</code></td>
+          </tr>
+          <tr>
+            <td>Digits</td>
+            <td><code>Keys.Digit0</code> through <code>Keys.Digit9</code></td>
+          </tr>
+          <tr>
+            <td>Function</td>
+            <td><code>Keys.F1</code> through <code>Keys.F12</code></td>
+          </tr>
+          <tr>
+            <td>Special</td>
+            <td>
+              <code>Keys.Enter</code>, <code>Space</code>, <code>Escape</code>,
+              <code>Tab</code>, <code>Backspace</code>, <code>Delete</code>
+            </td>
+          </tr>
+          <tr>
+            <td>Modifiers</td>
+            <td>
+              <code>Keys.ShiftLeft</code>, <code>ControlLeft</code>,
+              <code>AltLeft</code>, <code>MetaLeft</code> (+ Right)
+            </td>
+          </tr>
+          <tr>
+            <td>Mouse</td>
+            <td>
+              <code>MouseButton.LEFT</code> (0), <code>MIDDLE</code> (1),
+              <code>RIGHT</code> (2)
+            </td>
+          </tr>
+        </table>
+      </main>
+    </div>
+  </body>
+</html>

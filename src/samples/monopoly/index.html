@@ -7,7 +7,7 @@
     <script src="../../engine/engine-core.js"></script>
     <script src="../../engine/game-loader.js"></script>
     <script>
-        var files = [{
+        var _files = [{
             name: "Game Scene",
             path: "scenes/gameScene.js"
         }, {
@@ -71,14 +71,13 @@
             name: "CPU Player",
             path: "bin/cpu.js"
         }]
-        loader(files, "D:\\GitHub\\js-canvas-game-engine\\src\\samples\\monopoly\\");
+        loader(_files);
     </script>
 </head>
 
 <body style="margin: 0; padding: 0;">
     <canvas id="canvas"></canvas>
 
-    <script src="../../assets/js/jquery-3.6.0.min.js"></script>
     <!-- <script src="scenes/menuScene.js" defer></script>
     <script src="scenes/gameScene.js" defer></script>
     <script src="board/map.js" defer></script>

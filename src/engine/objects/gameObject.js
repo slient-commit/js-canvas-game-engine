@@ -50,7 +50,7 @@ class GameObject {
         if (this.position.X < other.position.X + other.sprite.width &&
             this.position.X + this.sprite.width > other.position.X &&
             this.position.Y < other.position.Y + other.sprite.height &&
-            this.sprite.height + this.position.Y > other.sprite.height) {
+            this.sprite.height + this.position.Y > other.position.Y) {
             return true;
         }
         return false;

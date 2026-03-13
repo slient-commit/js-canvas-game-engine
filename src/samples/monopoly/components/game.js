@@ -1,7 +1,7 @@
 class Game {
     constructor(engine) {
         this.map = new Map(new Size(10, 10), engine, this);
-        this.events = new Event(this.engine, this);
+        this.events = new GameEvent(this.engine, this);
         this.cpu = new CPU(this);
         this.movements = new Movement(this, this.cpu);
         this.moving = false;

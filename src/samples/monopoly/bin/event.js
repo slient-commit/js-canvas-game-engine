@@ -1,4 +1,4 @@
-class Event {
+class GameEvent {
     constructor(engine, game) {
         this.game = game;
         this.messageBox = new MessageBox(engine, this.game);

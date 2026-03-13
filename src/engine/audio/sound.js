@@ -22,27 +22,27 @@ class Sound {
      */
     ending(callback = null) {
         if (callback) {
-            this.audioObject.onended = callback();
+            this.audioObject.onended = callback;
         }
     }
 
     /**
      * While playing Event
-     * @param {Function} callback 
+     * @param {Function} callback
      */
     playing(callback = null) {
         if (callback) {
-            this.audioObject.onplaying = callback();
+            this.audioObject.onplaying = callback;
         }
     }
 
     /**
      * After the file is loaded
-     * @param {Function} callback 
+     * @param {Function} callback
      */
     loaded(callback = null) {
         if (callback) {
-            this.audioObject.loaded = callback();
+            this.audioObject.oncanplaythrough = callback;
         }
     }
 

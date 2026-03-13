@@ -4,6 +4,11 @@ class Engine {
         this.canvas = canvas;
         this.ctx = canvas.getContext("2d");
         this.drawer = new Drawer(canvas);
+        this.input = new InputManager(canvas);
+        this.sound = new SoundManager();
+        this.tweens = new TweenManager();
+        this.assets = new AssetManager();
+        this.debug = new DebugOverlay(this);
         this.displayFPS = false;
         this.calculeFPS = false;
         this.engineActive = false;
@@ -27,8 +32,10 @@ class Engine {
         this.clickDelayCounter = 0.1;
         this.initImageLoading = false;
         this.initImageIsLoading = false;
+        this._transition = null;
         this.canvas.addEventListener('mousemove', function(e) {
-            return this.mousePoint = new Point(e.pageX, e.pageY);
+            var rect = this.canvas.getBoundingClientRect();
+            this.mousePoint = new Point(e.clientX - rect.left, e.clientY - rect.top);
         }.bind(this));
 
         this.canvas.addEventListener('mousedown', function(e) {
@@ -146,11 +153,23 @@ class Engine {
     }
 
     /**
+     * Set canvas size manually
+     * @param {number} width
+     * @param {number} height
+     */
+    setCanvasSize(width, height) {
+        this.canvas.width = width;
+        this.canvas.height = height;
+        this.canvas.style.width = width + 'px';
+        this.canvas.style.height = height + 'px';
+    }
+
+    /**
      * Get the canvas size
      * @returns Size
      */
     screenSize() {
-        return new Size(window.innerWidth, window.innerHeight);
+        return new Size(this.canvas.width, this.canvas.height);
     }
 
     /**
@@ -188,21 +207,34 @@ class Engine {
      * @returns bool
      */
     startEngine() {
-        this.engineActive = this.OnCreate();
-        this.timerElement = setInterval(this.timerElapsed.bind(this), 1);
+        var result = this.OnCreate();
+        this.engineActive = result !== false; // only explicit 'return false' stops the engine
+        this.startTime = performance.now();
+        this._boundLoop = this._gameLoop.bind(this);
+        this._rafId = requestAnimationFrame(this._boundLoop);
         return this.engineActive;
     }
 
     /**
-     * Execute the OnDestory user function and stop's the engine timer
+     * Main game loop using requestAnimationFrame
+     * @param {number} timestamp
+     */
+    _gameLoop(timestamp) {
+        if (!this.engineActive) return;
+        this.timerElapsed(timestamp);
+        this._rafId = requestAnimationFrame(this._boundLoop);
+    }
+
+    /**
+     * Stop the engine
      * @returns bool
      */
     stopEngine() {
-        if (this.timerElement === null || this.timerElement === undefined) {
-            console.error('There is a problem in the engine, the engine can\'t stop.')
-            return false;
+        this.engineActive = false;
+        if (this._rafId) {
+            cancelAnimationFrame(this._rafId);
+            this._rafId = null;
         }
-        clearInterval(this.timerElement);
         return true;
     }
 
@@ -234,11 +266,22 @@ class Engine {
 
     /**
      * Set the current scene to be displayed
-     * @param {Scene} scene 
+     * @param {Scene} scene
+     * @param {Object} data - optional data to pass to the new scene
+     * @param {string} transition - 'none', 'fade', 'slide-left', 'slide-right'
+     * @param {number} duration - transition duration in seconds (default 0.5)
      * @returns {boolean}
      */
-    goToScene(scene) {
-        if (scene !== null || scene !== undefined) {
+    goToScene(scene, data, transition, duration) {
+        if (scene === null || scene === undefined) return false;
+        if (this._transition) return false; // already transitioning
+
+        transition = transition || 'none';
+        duration = duration || 0.5;
+
+        scene._incomingData = data || null;
+
+        if (transition === 'none' || !this.currentScene) {
             if (this.currentScene !== null) {
                 this.currentScene.ended();
             }
@@ -246,7 +289,15 @@ class Engine {
             return true;
         }
 
-        return false;
+        // Start transition — keep old scene visible during fade-out
+        this._transition = {
+            type: transition,
+            duration: duration,
+            elapsed: 0,
+            newScene: scene,
+            phase: 'out' // 'out' then 'in'
+        };
+        return true;
     }
 
     /**
@@ -388,10 +439,9 @@ class Engine {
     /**
      * Timer callback function, where the magic is running
      */
-    timerElapsed() {
+    timerElapsed(timestamp) {
         this.drawer.clear();
         if (this.currentScene !== null && this.currentScene.isCreated == true && !this.initImageLoading) {
-            console.log(this.currentScene.isCreated, this.initImageLoading);
             if (!this.initImageIsLoading) {
                 this.initImageIsLoading = true;
                 this.startLoadingAllImages(() => { console.info('all sprites loaded') });
@@ -399,10 +449,11 @@ class Engine {
             this.drawer.text("Loading...", { X: 100, Y: 100 }, 48, 'Arial', '', 'black');
             return;
         }
-        // Calcule the delta time
-        this.endTime = new Date();
-        this.elapsedTime = Math.abs(this.endTime - this.startTime) / 1000;
-        this.startTime = this.endTime;
+        // Calculate the delta time
+        if (timestamp === undefined) timestamp = performance.now();
+        this.elapsedTime = (timestamp - this.startTime) / 1000;
+        if (this.elapsedTime > 0.1) this.elapsedTime = 0.016; // cap to prevent spiral of death
+        this.startTime = timestamp;
         // Run the user logic everytime
         // this.engineActive = this.OnUpdate(this.elapsedTime);
 
@@ -443,24 +494,90 @@ class Engine {
                 }
             }
         }
+        // Update tweens
+        this.tweens.update(this.elapsedTime);
+
+        // Draw scene transition overlay
+        if (this._transition) {
+            this._drawTransition(this.elapsedTime);
+        }
+
+        // Debug overlay
+        this.debug.draw();
+
         // Display FPS
-        if (this.calculeFPS) {
-            this.frameTimer = this.elapsedTime;
+        if (this.calculeFPS || this.displayFPS) {
+            this.frameTimer += this.elapsedTime;
             this.frameCount += 1;
             if (this.frameTimer >= 1) {
-                this.frameTimer -= 1;
                 this.fps = this.frameCount;
                 this.frameCount = 0;
-                if (this.displayFPS) {
-                    console.info(`FPS: ${this.fps}`);
-                }
+                this.frameTimer = 0;
             }
+            if (this.displayFPS) {
+                this.drawer.text(`FPS: ${this.fps}`, { X: 10, Y: 20 }, 14, 'monospace', 'bold', 'lime');
+            }
+        }
+        // Clear per-frame input state
+        this.input.update();
+    }
+
+    /**
+     * Draw scene transition effect
+     * @param {number} dt
+     */
+    _drawTransition(dt) {
+        var t = this._transition;
+        t.elapsed += dt;
+        var progress = Math.min(t.elapsed / t.duration, 1);
+
+        var ctx = this.drawer.ctx;
+        var w = this.canvas.width;
+        var h = this.canvas.height;
+
+        // Draw the overlay
+        if (t.type === 'fade') {
+            var alpha = t.phase === 'out' ? progress : 1 - progress;
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, w, h);
+            ctx.restore();
+        } else if (t.type === 'slide-left') {
+            var offset = t.phase === 'out' ? progress * w : (1 - progress) * w;
+            ctx.save();
+            ctx.globalAlpha = 0.5;
+            ctx.fillStyle = 'black';
+            ctx.fillRect(w - offset, 0, offset, h);
+            ctx.restore();
+        } else if (t.type === 'slide-right') {
+            var offset = t.phase === 'out' ? progress * w : (1 - progress) * w;
+            ctx.save();
+            ctx.globalAlpha = 0.5;
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, offset, h);
+            ctx.restore();
+        }
+
+        // When fade-out completes, switch scenes at peak black
+        if (t.phase === 'out' && progress >= 1) {
+            if (this.currentScene) {
+                this.currentScene.ended();
+            }
+            this.currentScene = t.newScene;
+            t.phase = 'in';
+            t.elapsed = 0;
+        }
+
+        // When fade-in completes, end transition
+        if (t.phase === 'in' && progress >= 1) {
+            this._transition = null;
         }
     }
 
     /**
      * Load all images from sprites in the engine
-     * @param {function} callback 
+     * @param {function} callback
      */
     startLoadingAllImages(callback) {
         let imagesOK = 0;

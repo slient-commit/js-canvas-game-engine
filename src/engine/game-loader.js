@@ -1,22 +1,39 @@
-function loader(files, gamepath) {
-    console.log(`Loading Game Files...`);
-    files.forEach((file) => {
-        const script = document.createElement('script');
-        script.setAttribute(
-            'src',
-            gamepath + file.path,
-        );
+function loader(files, gamepath="", onDone=undefined) {
+    console.log(`Loading Game Files... (waiting for engine)`);
 
-        script.setAttribute('async', '');
+    function startLoading() {
+        function loadScript(index) {
+            if (index >= files.length) {
+                console.log("All game scripts loaded.");
+                if (onDone) onDone();
+                window.dispatchEvent(new Event("gameReady"));
+                return;
+            }
 
-        script.onload = function handleScriptLoaded() {
-            console.log(`game script ${file.name} has loaded`);
-        };
+            var file = files[index];
+            var script = document.createElement('script');
+            script.src = gamepath + file.path;
 
-        script.onerror = function handleScriptError() {
-            console.log(`error loading game script ${file.name}`);
-        };
+            script.onload = function() {
+                console.log(`game script ${file.name} has loaded`);
+                loadScript(index + 1);
+            };
 
-        document.head.appendChild(script);
-    });
+            script.onerror = function() {
+                console.log(`error loading game script ${file.name}`);
+                loadScript(index + 1);
+            };
+
+            document.head.appendChild(script);
+        }
+
+        loadScript(0);
+    }
+
+    // Wait for engine to be ready before loading game scripts
+    if (window._engineReady) {
+        startLoading();
+    } else {
+        window.addEventListener('engineReady', startLoading);
+    }
 }

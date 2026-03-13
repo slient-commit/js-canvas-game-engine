@@ -44,9 +44,9 @@ class Camera {
                 this.position = new Position(this.position.X - this.speed, this.position.Y);
         }
 
-        if (gameObject.position.Y < bordersX) {
-            if (this.position.Y > gameObject.Y - (this.cameraSize.height / 2))
-                this.position = new Position(this.position.X, this.position.Y - this.speed);
+        if (gameObject.position.X > bordersX.Y) {
+            if (this.position.X < gameObject.position.X - (this.cameraSize.width / 2))
+                this.position = new Position(this.position.X + this.speed, this.position.Y);
         }
 
         if (gameObject.position.Y < bordersY.X) {

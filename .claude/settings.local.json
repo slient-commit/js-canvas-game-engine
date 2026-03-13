@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C \"c:/repos/mine/js-canvas-game-engine\" diff --stat)"
+    ]
+  }
+}

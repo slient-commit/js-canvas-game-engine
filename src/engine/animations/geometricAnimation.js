@@ -112,6 +112,6 @@ class GeometricAnimation {
                 drawer.circle(new Position(point.X, point.Y), 4, 0, (2 * Math.PI), true, 2, 'red', null);
             }
         if (this.endPoint.position)
-            engine.drawer.circle(new Position(this.endPoint.position.X, this.endPoint.position.Y), 4, 0, (2 * Math.PI), true, 2, 'red', null);
+            drawer.circle(new Position(this.endPoint.position.X, this.endPoint.position.Y), 4, 0, (2 * Math.PI), true, 2, 'red', null);
     }
 }

@@ -1,4 +1,4 @@
-$(window).on("load", function() {
+window.addEventListener("engineReady", function() {
     class RunnerScene extends Scene {
 
         constructor(engine) {
@@ -115,10 +115,9 @@ $(window).on("load", function() {
     }
 
     // Get the canas Element
-    var canvas = $("#canvas");
-    var ctx = canvas[0].getContext("2d");
+    var canvas = document.getElementById("canvas");
 
-    engine = new Engine(canvas[0]);
+    engine = new Engine(canvas);
 
     engine.OnCreate = function() {
         runnerScene = new RunnerScene(this);
