@@ -33,6 +33,9 @@ class Map {
     }
 
     drawBoard() {
+        // Dark background
+        this.engine.drawer.clearWithColor('#0e0e1a');
+
         for (var i = 0; i < this.size.width * this.size.height; i++) {
             if (this.tiles[i]) {
                 let position = this.game.movements.isometricPosition(this.tiles[i].position, this.tiles[i].size, new Point(

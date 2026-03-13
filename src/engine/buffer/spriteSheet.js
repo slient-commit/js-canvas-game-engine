@@ -11,16 +11,23 @@ class SpriteSheet extends Sprite {
         this.frameSpeed = frameSpeed;
         this.startFrame = startFrame;
         this.endFrame = endFrame;
-        this.loadImage(imagePath);
         this.animationSequence = [];
         this.callback = callback;
         // create the sequence of frame numbers for the animation
         for (var frameNumber = startFrame; frameNumber <= endFrame; frameNumber++) {
             this.animationSequence.push(frameNumber);
         }
-        // Calcule how many frame there is per row
-        this.framesPerRow = parseInt(Math.floor(parseFloat((this.image.width / width))));
+        // framesPerRow will be calculated when the image loads
+        this.framesPerRow = 0;
         this.countPlaying = 0;
+
+        // Override onload to recalculate framesPerRow when image is ready
+        var self = this;
+        this.image.onload = function() {
+            self.imageLoaded = true;
+            self.framesPerRow = Math.floor(self.image.width / self.dWidth);
+        };
+        if (imagePath) this.image.src = imagePath;
     }
 
     /**
@@ -58,10 +65,7 @@ class SpriteSheet extends Sprite {
         return new Point(parseInt(col * this.width), parseInt(row * this.height));
     }
 
-    /**
-     * Function to call back when the engine is loading all images
-     */
     callbackWhenLoading() {
-        this.framesPerRow = parseInt(Math.floor(parseFloat((this.image.width / this.dWidth).toString())).toString());
+        // kept for compatibility — framesPerRow is now recalculated in onload
     }
 }

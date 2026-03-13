@@ -5,6 +5,7 @@ class Layer {
         this.gameObjects = [];
         this.elements = [];
         this.z_order = 0;
+        this.isUI = false;
     }
 
     /**

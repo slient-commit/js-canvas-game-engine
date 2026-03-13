@@ -1,7 +1,8 @@
 class Engine {
     constructor(canvas) {
         this.canvas = canvas;
-        this.ctx = canvas.getContext("2d");
+        this.ctx = canvas.getContext("2d", { alpha: false, desynchronized: true });
+        canvas.style.willChange = 'transform';
         this.drawer = new Drawer(canvas);
         this.input = new InputManager(canvas);
         this.sound = new SoundManager();
@@ -36,23 +37,15 @@ class Engine {
         }.bind(this));
 
         this.canvas.addEventListener('mousedown', function(e) {
-            if ('which' in e) {
-                if (!this.mouseButton.includes(e.which)) this.mouseButton.push(e.which);
-            } else {
-                if (!this.mouseButton.includes(e.button)) this.mouseButton.push(e.button);
-            }
+            var btn = e.button;
+            if (!this.mouseButton.includes(btn)) this.mouseButton.push(btn);
             this.mouseClicking = true;
         }.bind(this));
 
         this.canvas.addEventListener('mouseup', function(e) {
-            if ('which' in e) {
-                if (this.mouseButton.includes(e.which)) {
-                    this.mouseButton = this.removeItemAll(this.mouseButton, e.which);
-                }
-            } else {
-                if (this.mouseButton.includes(e.button)) {
-                    this.mouseButton = this.removeItemAll(this.mouseButton, e.button);
-                }
+            var btn = e.button;
+            if (this.mouseButton.includes(btn)) {
+                this.mouseButton = this.removeItemAll(this.mouseButton, btn);
             }
             this.mouseClicking = false;
         }.bind(this));
@@ -159,6 +152,22 @@ class Engine {
         this.canvas.height = height;
         this.canvas.style.width = width + 'px';
         this.canvas.style.height = height + 'px';
+    }
+
+    /**
+     * Make the canvas fill the entire browser window and auto-resize
+     */
+    setFullScreen() {
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+        this.canvas.style.width = '100%';
+        this.canvas.style.height = '100%';
+        this._fullScreen = true;
+        this._onResize = function() {
+            this.canvas.width = window.innerWidth;
+            this.canvas.height = window.innerHeight;
+        }.bind(this);
+        window.addEventListener('resize', this._onResize);
     }
 
     /**
@@ -460,9 +469,12 @@ class Engine {
                     this.drawer.gameObject(this.currentScene.gameObjects[i], 1, this.currentScene.currentCamera);
             }
             this.currentScene.layers.sort(this.compareLayers);
+
+            // Pass 1: World layers (affected by camera)
             for (var i = 0; i < this.currentScene.layers.length; i++) {
                 let container = this.currentScene.layers[i];
                 let layer = container.layer;
+                if (layer.isUI) continue;
 
                 for (let j = 0; j < layer.elements.length; j++) {
                     let element = layer.elements[j];
@@ -474,6 +486,36 @@ class Engine {
                     let gameObject = layer.gameObjects[j];
                     if (gameObject.showIt)
                         this.drawer.gameObject(gameObject, gameObject.opacity, this.currentScene.currentCamera);
+                }
+            }
+
+            // Pass 2: UI layers (screen space, no camera)
+            for (var i = 0; i < this.currentScene.layers.length; i++) {
+                let container = this.currentScene.layers[i];
+                let layer = container.layer;
+                if (!layer.isUI) continue;
+
+                for (let j = 0; j < layer.elements.length; j++) {
+                    let element = layer.elements[j];
+                    if (!element.showIt) continue;
+
+                    if (typeof element.update === 'function') {
+                        element.update(this);
+                    }
+
+                    if (element._isLabel || element._isPanel) {
+                        element.draw(this.drawer);
+                    } else if (!element._useSprites && typeof element.drawFallback === 'function') {
+                        element.drawFallback(this.drawer);
+                    } else {
+                        this.drawer.element(element, element.opacity, null);
+                    }
+                }
+
+                for (let j = 0; j < layer.gameObjects.length; j++) {
+                    let gameObject = layer.gameObjects[j];
+                    if (gameObject.showIt)
+                        this.drawer.gameObject(gameObject, gameObject.opacity, null);
                 }
             }
         }

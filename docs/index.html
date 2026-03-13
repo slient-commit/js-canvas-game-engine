@@ -295,6 +295,12 @@
         <a href="#sprite">Sprite &amp; SpriteSheet</a>
         <a href="#layers">Layers</a>
 
+        <div class="nav-section">UI System</div>
+        <a href="#ui-layer">UILayer</a>
+        <a href="#ui-button">UIButton</a>
+        <a href="#ui-label">UILabel</a>
+        <a href="#ui-panel">UIPanel</a>
+
         <div class="nav-section">Camera</div>
         <a href="#camera">Camera</a>
         <a href="#worldcamera">WorldCamera</a>
@@ -308,7 +314,13 @@
         <a href="#sound">Sound</a>
         <a href="#assets">AssetManager</a>
         <a href="#lighting">Lighting</a>
+        <a href="#shadows">Shadows</a>
         <a href="#debug">Debug Overlay</a>
+
+        <div class="nav-section">Isometric</div>
+        <a href="#isometric-utils">IsometricUtils</a>
+        <a href="#isometric-map">IsometricMap</a>
+        <a href="#pathfinder">PathFinder</a>
 
         <div class="nav-section">Utilities</div>
         <a href="#game-loader">Game Loader</a>
@@ -381,10 +393,13 @@ window.<span class="fn">addEventListener</span>(<span class="st">"engineReady"</
 │   ├── input/                  <span class="cm">— InputManager</span>
 │   ├── audio/                  <span class="cm">— Sound, SoundManager</span>
 │   ├── animations/             <span class="cm">— Tween, Easing, Animation</span>
-│   ├── particles/              <span class="cm">— ParticleEmitter, Fire</span>
+│   ├── ui/                     <span class="cm">— UILayer, UIButton, UILabel, UIPanel</span>
+│   ├── particles/              <span class="cm">— ParticleEmitter, Presets</span>
 │   ├── physics/                <span class="cm">— Collision helpers</span>
 │   ├── tilemap/                <span class="cm">— Tileset, Tilemap</span>
+│   ├── isometric/              <span class="cm">— IsometricUtils, IsometricMap, PathFinder</span>
 │   ├── lights/                 <span class="cm">— Lighting, LightSpot</span>
+│   ├── shadows/                <span class="cm">— ShadowSystem, ShadowCaster</span>
 │   ├── assets/                 <span class="cm">— AssetManager</span>
 │   ├── debug/                  <span class="cm">— DebugOverlay</span>
 │   └── util/                   <span class="cm">— Vec2, Size, RGB, buttons, EventEmitter</span>
@@ -469,10 +484,35 @@ window.<span class="fn">addEventListener</span>(<span class="st">"engineReady"</
             <td>Set canvas dimensions</td>
           </tr>
           <tr>
+            <td>setFullScreen()</td>
+            <td>Fill the browser window and auto-resize on window resize</td>
+          </tr>
+          <tr>
             <td>screenSize()</td>
             <td>Returns <code>Size</code> of the canvas</td>
           </tr>
+          <tr>
+            <td>mouseOnTopOf(gameObject)</td>
+            <td>Check if mouse is over a registered <code>GameObject</code> or <code>Element</code></td>
+          </tr>
+          <tr>
+            <td>mouseOnTopOfPosition(pos, size)</td>
+            <td>Check if mouse is inside a rectangle area</td>
+          </tr>
         </table>
+
+        <h3>Canvas Sizing</h3>
+        <pre><code>engine.<span class="fn">setCanvasSize</span>(<span class="nb">960</span>, <span class="nb">540</span>);  <span class="cm">// fixed dimensions</span>
+engine.<span class="fn">setFullScreen</span>();             <span class="cm">// fill browser window, auto-resize</span></code></pre>
+
+        <h3>GPU Acceleration</h3>
+        <p>
+          The engine automatically enables GPU acceleration when available.
+          The canvas context is created with <code>alpha: false</code> (opaque canvas,
+          skips page compositing) and <code>desynchronized: true</code> (lower input
+          latency). The canvas element is promoted to its own GPU-composited layer
+          via <code>will-change: transform</code>.
+        </p>
 
         <h3>Transitions</h3>
         <p>Use <code>goToScene</code> with a transition type:</p>
@@ -698,7 +738,8 @@ player.<span class="fn">move</span>(elapsedTime);
 spr.<span class="fn">loadImage</span>(<span class="st">'image.png'</span>);
 
 <span class="cm">// Animated spritesheet</span>
-<span class="kw">var</span> sheet = <span class="kw">new</span> <span class="fn">SpriteSheet</span>(<span class="st">'run'</span>, <span class="nb">64</span>, <span class="nb">64</span>, columns, startFrame, endFrame, <span class="st">'sheet.png'</span>);
+<span class="cm">// SpriteSheet(name, frameW, frameH, frameSpeed, startFrame, endFrame, imagePath)</span>
+<span class="kw">var</span> sheet = <span class="kw">new</span> <span class="fn">SpriteSheet</span>(<span class="st">'run'</span>, <span class="nb">64</span>, <span class="nb">64</span>, <span class="nb">5</span>, <span class="nb">0</span>, <span class="nb">7</span>, <span class="st">'sheet.png'</span>);
 
 <span class="cm">// Attach to animation system</span>
 <span class="kw">var</span> anim = <span class="kw">new</span> <span class="fn">Animation</span>();
@@ -723,6 +764,114 @@ scene.<span class="fn">registerLayer</span>(uiLayer);</code></pre>
           Layers are drawn in registration order (first = behind, last = in
           front).
         </p>
+
+        <!-- ===== UI LAYER ===== -->
+        <h2 id="ui-layer">UILayer</h2>
+
+        <p>
+          A screen-space layer that is <strong>not affected by camera movement</strong>.
+          Use it for HUD elements, menus, and overlays that should stay fixed on screen.
+        </p>
+
+        <pre><code><span class="kw">var</span> hud = <span class="kw">new</span> <span class="fn">UILayer</span>(<span class="st">'hud'</span>);
+hud.<span class="fn">registerElement</span>(button);
+hud.<span class="fn">registerElement</span>(label);
+hud.<span class="fn">registerElement</span>(panel);
+scene.<span class="fn">registerLayer</span>(hud);</code></pre>
+
+        <div class="note">
+          UILayer extends <code>Layer</code> with <code>isUI = true</code>.
+          The engine renders UI layers after world layers, ignoring any camera offset.
+          Elements in a UILayer are automatically updated and drawn by the engine.
+        </div>
+
+        <!-- ===== UI BUTTON ===== -->
+        <h2 id="ui-button">UIButton</h2>
+
+        <p>
+          An interactive button element. Supports sprite-based or color-fallback rendering,
+          hover/press states, and click callbacks.
+        </p>
+
+        <pre><code><span class="kw">var</span> btn = <span class="kw">new</span> <span class="fn">UIButton</span>(
+    <span class="kw">new</span> <span class="fn">Vec2</span>(<span class="nb">100</span>, <span class="nb">400</span>),
+    <span class="kw">new</span> <span class="fn">Size</span>(<span class="nb">160</span>, <span class="nb">45</span>),
+    {
+        label:        <span class="st">'Play'</span>,
+        fontSize:     <span class="nb">16</span>,
+        fontFamily:   <span class="st">'monospace'</span>,
+        fontColor:    <span class="st">'white'</span>,
+        normalColor:  <span class="st">'#2a4a6a'</span>,
+        hoverColor:   <span class="st">'#3a6a8a'</span>,
+        pressedColor: <span class="st">'#1a3a5a'</span>,
+        onClick: <span class="kw">function</span>() { <span class="cm">/* start game */</span> }
+    }
+);
+hud.<span class="fn">registerElement</span>(btn);</code></pre>
+
+        <table>
+          <tr><th>Option</th><th>Description</th></tr>
+          <tr><td>label</td><td>Button text</td></tr>
+          <tr><td>fontSize</td><td>Text font size (default 14)</td></tr>
+          <tr><td>fontFamily</td><td>Font family (default 'monospace')</td></tr>
+          <tr><td>fontColor</td><td>Text color (default 'white')</td></tr>
+          <tr><td>normalColor</td><td>Background color at rest</td></tr>
+          <tr><td>hoverColor</td><td>Background color on hover</td></tr>
+          <tr><td>pressedColor</td><td>Background color when pressed</td></tr>
+          <tr><td>normalSprite</td><td>Sprite for normal state (optional)</td></tr>
+          <tr><td>hoverSprite</td><td>Sprite for hover state (optional)</td></tr>
+          <tr><td>pressedSprite</td><td>Sprite for pressed state (optional)</td></tr>
+          <tr><td>onClick</td><td>Callback when clicked</td></tr>
+          <tr><td>onHover</td><td>Callback on hover</td></tr>
+        </table>
+
+        <p>
+          Use <code>btn.showIt = false</code> to hide/show the button dynamically.
+          Properties <code>isHovered</code>, <code>isPressed</code>, and
+          <code>isDisabled</code> are available for state checks.
+        </p>
+
+        <div class="note">
+          When no sprites are provided, UIButton renders a colored rectangle with
+          centered text. This is the recommended approach for dark-themed UIs.
+        </div>
+
+        <!-- ===== UI LABEL ===== -->
+        <h2 id="ui-label">UILabel</h2>
+
+        <p>A text element for screen-space text display. Update text dynamically with <code>setText()</code>.</p>
+
+        <pre><code><span class="kw">var</span> label = <span class="kw">new</span> <span class="fn">UILabel</span>(<span class="st">'Score: 0'</span>, <span class="kw">new</span> <span class="fn">Vec2</span>(<span class="nb">20</span>, <span class="nb">30</span>), {
+    fontSize:   <span class="nb">14</span>,
+    fontFamily: <span class="st">'monospace'</span>,
+    fontStyle:  <span class="st">'bold'</span>,
+    color:      <span class="st">'#44aaff'</span>
+});
+hud.<span class="fn">registerElement</span>(label);
+
+<span class="cm">// Update text each frame:</span>
+label.<span class="fn">setText</span>(<span class="st">'Score: '</span> + score);</code></pre>
+
+        <!-- ===== UI PANEL ===== -->
+        <h2 id="ui-panel">UIPanel</h2>
+
+        <p>A rectangular background panel for grouping UI elements visually.</p>
+
+        <pre><code><span class="kw">var</span> panel = <span class="kw">new</span> <span class="fn">UIPanel</span>(
+    <span class="kw">new</span> <span class="fn">Vec2</span>(<span class="nb">10</span>, <span class="nb">10</span>),
+    <span class="kw">new</span> <span class="fn">Size</span>(<span class="nb">200</span>, <span class="nb">80</span>),
+    {
+        fillColor:   <span class="st">'rgba(10, 10, 30, 0.85)'</span>,
+        borderColor: <span class="st">'#334455'</span>,
+        borderWidth: <span class="nb">1</span>
+    }
+);
+hud.<span class="fn">registerElement</span>(panel);</code></pre>
+
+        <div class="note">
+          Register panels <strong>before</strong> labels and buttons in the UILayer
+          so they render behind the interactive elements.
+        </div>
 
         <!-- ===== CAMERA ===== -->
         <h2 id="camera">Camera</h2>
@@ -951,11 +1100,105 @@ engine.assets.<span class="fn">startLoading</span>();
         <!-- ===== LIGHTING ===== -->
         <h2 id="lighting">Lighting</h2>
 
-        <pre><code><span class="kw">var</span> lighting = <span class="kw">new</span> <span class="fn">Lighting</span>(engine, cols, rows, tileSize);
-lighting.<span class="fn">addLightSpot</span>(<span class="kw">new</span> <span class="fn">LightSpot</span>(position, <span class="kw">new</span> <span class="fn">RGB</span>(<span class="nb">255</span>,<span class="nb">255</span>,<span class="nb">200</span>), distance, tension));
+        <p>
+          2D lighting system using an offscreen canvas with radial gradients.
+          Supports colored lights, flickering, and camera integration.
+        </p>
 
-<span class="cm">// In OnUpdate:</span>
-lighting.<span class="fn">draw</span>();</code></pre>
+        <pre><code><span class="kw">var</span> lighting = <span class="kw">new</span> <span class="fn">Lighting</span>(engine);
+lighting.ambientAlpha = <span class="nb">0.85</span>;   <span class="cm">// darkness level (0 = no dark, 1 = pitch black)</span>
+lighting.ambientColor = <span class="st">'black'</span>;
+
+<span class="cm">// Add lights</span>
+<span class="kw">var</span> torch = <span class="kw">new</span> <span class="fn">LightSpot</span>(<span class="kw">new</span> <span class="fn">Vec2</span>(<span class="nb">200</span>, <span class="nb">150</span>), <span class="kw">new</span> <span class="fn">RGB</span>(<span class="nb">255</span>, <span class="nb">160</span>, <span class="nb">50</span>), <span class="nb">180</span>, <span class="nb">0.9</span>);
+torch.flicker = <span class="nb">0.25</span>;           <span class="cm">// flicker amount 0-1</span>
+lighting.<span class="fn">addLightSpot</span>(torch);
+
+<span class="cm">// In OnUpdate (draw AFTER scene, BEFORE UI):</span>
+lighting.<span class="fn">draw</span>(elapsedTime, camera);</code></pre>
+
+        <table>
+          <tr><th>LightSpot Property</th><th>Description</th></tr>
+          <tr><td>position</td><td>Vec2 world position</td></tr>
+          <tr><td>color</td><td>RGB light color (default white)</td></tr>
+          <tr><td>radius</td><td>Light reach in pixels (default 150)</td></tr>
+          <tr><td>intensity</td><td>Brightness 0-1 (default 1.0)</td></tr>
+          <tr><td>flicker</td><td>Flicker amount 0-1 (default 0)</td></tr>
+          <tr><td>active</td><td>Enable/disable (default true)</td></tr>
+        </table>
+
+        <table>
+          <tr><th>Lighting Method</th><th>Description</th></tr>
+          <tr><td>addLightSpot(light)</td><td>Add a light source</td></tr>
+          <tr><td>removeLightSpot(light)</td><td>Remove a light source</td></tr>
+          <tr><td>clearLights()</td><td>Remove all lights</td></tr>
+          <tr><td>draw(elapsedTime, camera?)</td><td>Render the lighting overlay</td></tr>
+        </table>
+
+        <!-- ===== SHADOWS ===== -->
+        <h2 id="shadows">Shadows</h2>
+
+        <p>
+          2D directional shadow system using an offscreen canvas. Shadows are
+          projected based on a global light angle and rendered with configurable
+          blur and opacity. Overlapping shadows do not stack darker.
+        </p>
+
+        <pre><code><span class="kw">var</span> shadows = <span class="kw">new</span> <span class="fn">ShadowSystem</span>(engine);
+shadows.lightAngle   = <span class="nb">225</span>;             <span class="cm">// degrees, where light comes FROM</span>
+shadows.shadowLength = <span class="nb">80</span>;              <span class="cm">// projection distance in pixels</span>
+shadows.shadowOpacity = <span class="nb">0.4</span>;            <span class="cm">// composite alpha</span>
+shadows.blur          = <span class="nb">4</span>;              <span class="cm">// soft shadow blur radius</span>
+
+<span class="cm">// Add casters</span>
+<span class="kw">var</span> crate = <span class="kw">new</span> <span class="fn">ShadowCaster</span>(
+    <span class="kw">new</span> <span class="fn">Vec2</span>(<span class="nb">100</span>, <span class="nb">200</span>),       <span class="cm">// position (can share reference with a GameObject)</span>
+    <span class="kw">new</span> <span class="fn">Size</span>(<span class="nb">50</span>, <span class="nb">50</span>),        <span class="cm">// footprint size</span>
+    <span class="st">'rectangle'</span>,              <span class="cm">// type: 'rectangle' or 'ellipse'</span>
+    <span class="nb">1.0</span>                       <span class="cm">// heightScale (taller objects = longer shadow)</span>
+);
+shadows.<span class="fn">addCaster</span>(crate);
+
+<span class="cm">// Tall pillar with longer shadow</span>
+shadows.<span class="fn">addCaster</span>(<span class="kw">new</span> <span class="fn">ShadowCaster</span>(<span class="kw">new</span> <span class="fn">Vec2</span>(<span class="nb">300</span>, <span class="nb">150</span>), <span class="kw">new</span> <span class="fn">Size</span>(<span class="nb">20</span>, <span class="nb">20</span>), <span class="st">'rectangle'</span>, <span class="nb">2.5</span>));
+
+<span class="cm">// Tree with ellipse shadow</span>
+shadows.<span class="fn">addCaster</span>(<span class="kw">new</span> <span class="fn">ShadowCaster</span>(<span class="kw">new</span> <span class="fn">Vec2</span>(<span class="nb">500</span>, <span class="nb">120</span>), <span class="kw">new</span> <span class="fn">Size</span>(<span class="nb">40</span>, <span class="nb">40</span>), <span class="st">'ellipse'</span>, <span class="nb">2.0</span>));
+
+<span class="cm">// In OnUpdate (draw BEFORE objects so shadows appear behind):</span>
+shadows.<span class="fn">draw</span>(camera);</code></pre>
+
+        <table>
+          <tr><th>ShadowSystem Property</th><th>Description</th></tr>
+          <tr><td>lightAngle</td><td>Degrees, direction light comes from (default 225)</td></tr>
+          <tr><td>shadowLength</td><td>Base projection distance in pixels (default 40)</td></tr>
+          <tr><td>shadowOpacity</td><td>Alpha when compositing onto canvas (default 0.4)</td></tr>
+          <tr><td>shadowColor</td><td>Shadow fill color (default 'black')</td></tr>
+          <tr><td>blur</td><td>Blur radius in pixels (default 4)</td></tr>
+        </table>
+
+        <table>
+          <tr><th>ShadowSystem Method</th><th>Description</th></tr>
+          <tr><td>addCaster(caster)</td><td>Add a shadow caster</td></tr>
+          <tr><td>removeCaster(caster)</td><td>Remove a shadow caster</td></tr>
+          <tr><td>clearCasters()</td><td>Remove all casters</td></tr>
+          <tr><td>draw(camera?)</td><td>Render all shadows (call before drawing objects)</td></tr>
+        </table>
+
+        <table>
+          <tr><th>ShadowCaster Property</th><th>Description</th></tr>
+          <tr><td>position</td><td>Vec2 world position (shared reference for auto-tracking)</td></tr>
+          <tr><td>size</td><td>Size footprint</td></tr>
+          <tr><td>type</td><td>'rectangle' (projected hexagon) or 'ellipse' (rounded)</td></tr>
+          <tr><td>heightScale</td><td>Shadow length multiplier (default 1.0)</td></tr>
+          <tr><td>active</td><td>Enable/disable (default true)</td></tr>
+        </table>
+
+        <div class="note">
+          Pass a <strong>shared reference</strong> to a GameObject's position when creating
+          a ShadowCaster. The shadow will automatically follow the object as it moves,
+          with no manual sync needed.
+        </div>
 
         <!-- ===== DEBUG ===== -->
         <h2 id="debug">Debug Overlay</h2>
@@ -965,6 +1208,116 @@ lighting.<span class="fn">draw</span>();</code></pre>
         <pre><code>engine.debug.showCollisionBoxes = <span class="nb">true</span>;
 engine.debug.showCameraBounds   = <span class="nb">true</span>;
 engine.debug.showObjectCount    = <span class="nb">true</span>;</code></pre>
+
+        <!-- ===== ISOMETRIC UTILS ===== -->
+        <h2 id="isometric-utils">IsometricUtils</h2>
+
+        <p>Static utility class for isometric coordinate conversion. No instance needed — all methods are static.</p>
+
+        <table>
+          <tr><th>Method</th><th>Description</th></tr>
+          <tr>
+            <td>toScreen(col, row, tileW, tileH, height, heightStep, offset)</td>
+            <td>Convert grid coordinates to screen position. Returns <code>Vec2</code>. Formula: <code>x = (col - row) * tileW/2</code>, <code>y = (col + row) * tileH/2 - height * heightStep</code></td>
+          </tr>
+          <tr>
+            <td>toGrid(screenX, screenY, tileW, tileH, offset)</td>
+            <td>Convert screen position to grid coordinates (ignores height). Returns <code>Vec2</code> with floating-point col/row</td>
+          </tr>
+          <tr>
+            <td>getDiamondVertices(screenX, screenY, tileW, tileH)</td>
+            <td>Get the four diamond vertices [top, right, bottom, left] as <code>Vec2</code> array</td>
+          </tr>
+        </table>
+
+        <pre><code><span class="cm">// Grid to screen</span>
+<span class="kw">var</span> screen = <span class="fn">IsometricUtils</span>.<span class="fn">toScreen</span>(<span class="nb">5</span>, <span class="nb">3</span>, <span class="nb">64</span>, <span class="nb">32</span>, <span class="nb">2</span>, <span class="nb">16</span>, offset);
+
+<span class="cm">// Screen to grid (approximate, ignores height)</span>
+<span class="kw">var</span> grid = <span class="fn">IsometricUtils</span>.<span class="fn">toGrid</span>(mouseX, mouseY, <span class="nb">64</span>, <span class="nb">32</span>, offset);
+
+<span class="cm">// Diamond vertices for hit testing</span>
+<span class="kw">var</span> verts = <span class="fn">IsometricUtils</span>.<span class="fn">getDiamondVertices</span>(sx, sy, <span class="nb">64</span>, <span class="nb">32</span>);</code></pre>
+
+        <!-- ===== ISOMETRIC MAP ===== -->
+        <h2 id="isometric-map">IsometricMap</h2>
+
+        <p>Height-aware isometric tilemap with collision detection, depth-sorted rendering, and height-based mouse picking.</p>
+
+        <h3>Constructor</h3>
+        <pre><code><span class="kw">var</span> map = <span class="kw">new</span> <span class="fn">IsometricMap</span>(cols, rows, tileWidth, tileHeight, heightStep);</code></pre>
+
+        <h3>Properties</h3>
+        <table>
+          <tr><th>Property</th><th>Type</th><th>Description</th></tr>
+          <tr><td>cols, rows</td><td><code>number</code></td><td>Grid dimensions</td></tr>
+          <tr><td>tileWidth, tileHeight</td><td><code>number</code></td><td>Tile diamond size in pixels</td></tr>
+          <tr><td>heightStep</td><td><code>number</code></td><td>Pixels per height unit (default 16)</td></tr>
+          <tr><td>tiles[][]</td><td><code>number</code></td><td>Tile type IDs indexed as <code>[row][col]</code></td></tr>
+          <tr><td>heightMap[][]</td><td><code>number</code></td><td>Height values indexed as <code>[row][col]</code></td></tr>
+          <tr><td>collisionMap[][]</td><td><code>number</code></td><td>0 = walkable, 1 = blocked. Indexed as <code>[row][col]</code></td></tr>
+          <tr><td>offset</td><td><code>Vec2</code></td><td>Screen offset for centering the map</td></tr>
+        </table>
+
+        <h3>Methods</h3>
+        <table>
+          <tr><th>Method</th><th>Description</th></tr>
+          <tr><td>toScreen(col, row)</td><td>Grid to screen with automatic height lookup. Returns <code>Vec2</code></td></tr>
+          <tr><td>toGrid(screenX, screenY)</td><td>Screen to grid with height-aware diamond hit testing. Returns <code>Vec2</code> (col, row) or (-1, -1)</td></tr>
+          <tr><td>getHeight(col, row)</td><td>Returns height value at tile</td></tr>
+          <tr><td>isWalkable(col, row)</td><td>Returns <code>true</code> if tile is not blocked</td></tr>
+          <tr><td>canMoveTo(fromCol, fromRow, toCol, toRow)</td><td>Walkable AND height difference &le; 1</td></tr>
+          <tr><td>inBounds(col, row)</td><td>Returns <code>true</code> if coordinates are within grid</td></tr>
+          <tr><td>draw(drawer, camera, entityCallback)</td><td>Render all tiles back-to-front with optional entity callback</td></tr>
+          <tr><td>drawTileHighlight(drawer, col, row, color, camera)</td><td>Draw a highlighted diamond overlay on a tile</td></tr>
+        </table>
+
+        <h3>Entity Callback</h3>
+        <p>The <code>draw()</code> method accepts an optional callback for depth-sorted entity rendering. The callback is called once per tile during the back-to-front traversal:</p>
+
+        <pre><code>map.<span class="fn">draw</span>(drawer, camera, <span class="kw">function</span>(col, row, screenX, screenY) {
+    <span class="cm">// Draw entities that belong to this tile</span>
+    <span class="kw">if</span> (player.col === col && player.row === row) {
+        drawPlayer(ctx, screenX, screenY);
+    }
+});</code></pre>
+
+        <div class="note">
+          Tile colors are derived from tile type: 0 = grass (green), 1 = dirt (brown), 2 = stone (grey), 3 = water (blue). Elevated tiles render left and right side faces with darkened shading.
+        </div>
+
+        <!-- ===== PATHFINDER ===== -->
+        <h2 id="pathfinder">PathFinder</h2>
+
+        <p>Static A* pathfinding for isometric maps. Respects walkability and height constraints.</p>
+
+        <table>
+          <tr><th>Method</th><th>Description</th></tr>
+          <tr>
+            <td>PathFinder.findPath(map, startCol, startRow, endCol, endRow)</td>
+            <td>Returns array of <code>{col, row}</code> waypoints (excluding start). Empty array if no path found</td>
+          </tr>
+        </table>
+
+        <h3>Cost Model</h3>
+        <ul>
+          <li>4-directional movement (N, S, E, W on grid)</li>
+          <li>Flat movement cost: <code>1.0</code></li>
+          <li>Height change cost: <code>1.5</code></li>
+          <li>Movement blocked if height difference &gt; 1 or tile is unwalkable</li>
+          <li>Manhattan distance heuristic</li>
+        </ul>
+
+        <pre><code><span class="kw">var</span> map = <span class="kw">new</span> <span class="fn">IsometricMap</span>(<span class="nb">20</span>, <span class="nb">20</span>, <span class="nb">64</span>, <span class="nb">32</span>, <span class="nb">16</span>);
+<span class="cm">// ... populate tiles, heightMap, collisionMap ...</span>
+
+<span class="kw">var</span> path = <span class="fn">PathFinder</span>.<span class="fn">findPath</span>(map, <span class="nb">0</span>, <span class="nb">0</span>, <span class="nb">10</span>, <span class="nb">10</span>);
+<span class="kw">if</span> (path.length > <span class="nb">0</span>) {
+    <span class="cm">// Walk each waypoint: path[i].col, path[i].row</span>
+    <span class="kw">for</span> (<span class="kw">var</span> i = <span class="nb">0</span>; i < path.length; i++) {
+        console.<span class="fn">log</span>(path[i].col, path[i].row);
+    }
+}</code></pre>
 
         <!-- ===== GAME LOADER ===== -->
         <h2 id="game-loader">Game Loader</h2>

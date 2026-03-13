@@ -29,7 +29,7 @@ window.addEventListener("engineReady", function() {
             // Create the runner
             this.player = new GameObject(new Sprite(65, 70), new Position(this.PLAYER_SPAWN_X, this.PLAYER_SPAWN_Y));
             // Create the running sprtieSheet
-            this.spriteSheet = new SpriteSheet('running', 65, 70, 10, 0, 11, './assets/sprites/man_running.png');
+            this.spriteSheet = new SpriteSheet('running', 65, 70, 4, 0, 11, './assets/sprites/man_running.png');
             // Create the animation for the runner and include the spritesheet
             this.playerAnimations = new Animation();
             this.playerAnimations.registerAnimation(this.spriteSheet);
@@ -44,11 +44,11 @@ window.addEventListener("engineReady", function() {
             // Create the building as Gameobject so they can move using the default functions
             this.buildingSprite = new Sprite(500, 250);
             this.buildingSprite.loadImage('./assets/sprites/buildings.png');
-            this.buildings = new GameObject(this.buildingSprite, new Position(-500, 480));
-            this.buildings0 = new GameObject(this.buildingSprite, new Position(0, 480));
-            this.buildings1 = new GameObject(this.buildingSprite, new Position(500, 480));
-            this.buildings2 = new GameObject(this.buildingSprite, new Position(1000, 480));
-            this.buildings3 = new GameObject(this.buildingSprite, new Position(1500, 480));
+            this.buildings = new GameObject(this.buildingSprite, new Position(-500, 680));
+            this.buildings0 = new GameObject(this.buildingSprite, new Position(0, 680));
+            this.buildings1 = new GameObject(this.buildingSprite, new Position(500, 680));
+            this.buildings2 = new GameObject(this.buildingSprite, new Position(1000, 680));
+            this.buildings3 = new GameObject(this.buildingSprite, new Position(1500, 680));
 
             // Set the velocity to 100 in X
             this.buildings.velocity = new Point(100, 0);
@@ -118,7 +118,7 @@ window.addEventListener("engineReady", function() {
     var canvas = document.getElementById("canvas");
 
     engine = new Engine(canvas);
-
+    engine.jumpEngineIntro = true;
     engine.OnCreate = function() {
         runnerScene = new RunnerScene(this);
         engine.registerScene(runnerScene);

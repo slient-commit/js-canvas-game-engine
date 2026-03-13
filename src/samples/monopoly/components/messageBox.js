@@ -1,62 +1,51 @@
 class MessageBox {
     constructor(engine, game) {
-        this.message = '';
         this.engine = engine;
-        this.isOpen = false;
-        this.ok = new Sprite(200, 50);
-
         this.game = game;
-
-        this.yes = new Sprite(200, 50);
-        this.no = new Sprite(200, 50);
+        this.isOpen = false;
         this.type = 'none';
-
         this.button1 = null;
         this.button2 = null;
         this.message = '';
         this.callback = null;
-        this.size = new Size(300, 200);
-
+        this.size = new Size(350, 180);
         this.cpu = false;
-
         this.clickSound = new Sound('./assets/audio/click.mp3', 80);
-
+        this._btn1Hovered = false;
+        this._btn2Hovered = false;
     }
 
-    simple(message, callback = null, cpu = false, width = 300, height = 200) {
-        this.type = 'simple';
-        this.size = new Size(width, height);
-        this.callback = callback;
-        this.message = message;
-        this.cpu = cpu;
-        this.ok = new Sprite(200, 50);
-        this.ok.loadImage('./assets/sprites/buttons/ok_off.png');
-        if (cpu) {
-            this.deleteAfter(1);
+    simple(message, callback, cpu, width, height) {
+        this.cpu = cpu || false;
+        if (this.cpu) {
+            // CPU: fire callback immediately, skip display
+            if (callback) callback();
+            return this;
         }
+        this.type = 'simple';
+        this.size = new Size(width || 350, height || 180);
+        this.callback = callback || null;
+        this.message = message;
         return this;
     }
 
-    custom(message, button1, button2, cpu = false, width = 600, height = 300) {
+    custom(message, button1, button2, cpu, width, height) {
+        this.cpu = cpu || false;
+        if (this.cpu) {
+            // CPU: skip display, CPU decisions are handled by the CPU class
+            return this;
+        }
         this.type = 'custom';
-        this.size = new Size(width, height);
+        this.size = new Size(width || 450, height || 220);
         this.message = message;
         this.button1 = button1;
         this.button2 = button2;
         this.game.canEnd = false;
-        this.cpu = cpu;
-        this.yes = new Sprite(200, 50);
-        this.no = new Sprite(200, 50);
-        this.yes.loadImage('./assets/sprites/buttons/ok_off.png');
-        this.no.loadImage('./assets/sprites/buttons/ok_off.png');
-        if (cpu) {
-            this.deleteAfter(1);
-        }
         return this;
     }
 
-    deleteAfter(second = 5) {
-        second = second * 1000;
+    deleteAfter(second) {
+        second = (second || 5) * 1000;
         setTimeout(function() {
             this.remove();
         }.bind(this), second);
@@ -68,88 +57,97 @@ class MessageBox {
         this.button2 = null;
         this.callback = null;
         this.type = 'none';
-        this.ok.image = null;
-        this.yes.image = null;
-        this.no.image = null;
-        this.size = new Size(300, 200);
+        this.size = new Size(350, 180);
         this.game.canEnd = true;
         this.isOpen = false;
+        this._btn1Hovered = false;
+        this._btn2Hovered = false;
+    }
+
+    _drawButton(label, x, y, w, h, baseColor, hoverColor, isHovered) {
+        var color = isHovered ? hoverColor : baseColor;
+        this.engine.drawer.rectangle(new Position(x, y), new Size(w, h), true, 1, color);
+        this.engine.drawer.rectangle(new Position(x, y), new Size(w, h), false, 1, 'rgba(255,255,255,0.15)');
+        var textW = this.engine.drawer.textWidth(label, 13, 'monospace', 'bold');
+        var tx = x + (w - textW) / 2;
+        var ty = y + (h + 13) / 2 - 2;
+        this.engine.drawer.text(label, new Position(tx, ty), 13, 'monospace', 'bold', 'white');
     }
 
     draw() {
         if (this.type == 'none') {
             this.isOpen = false;
-            // 
-        } else if (this.type == 'simple') {
-            this.isOpen = true;
-            let x = (this.engine.screenSize().width / 2) - (this.size.width / 2);
-            let y = (this.engine.screenSize().height / 2) - (this.size.height / 2);
-            this.engine.drawer.rectangle(new Position(0, 0), this.engine.screenSize(), true, 5, 'gray', 0.8);
-            this.engine.drawer.rectangle(new Position(x, y), this.size, true, 5, 'white');
-            this.engine.drawer.rectangle(new Position(x, y), this.size, false, 5, 'green');
+            return;
+        }
 
-            let bx = (x + (this.size.width / 2)) - 100;
-            let by = (y + this.size.height) - 60;
-            let tx = x + 30;
-            let ty = y + 50;
-            this.engine.drawer.text(this.message, new Position(tx, ty), 14, 'Consolas');
-            if (!this.cpu) {
-                if (this.ok) {
-                    if (this.engine.mouseOnTopOfPosition(new Position(bx, by), new Size(200, 50))) {
-                        this.ok.loadImage('./assets/sprites/buttons/ok_on.png');
-                        if (this.engine.mouseClicked(MouseButton.LEFT)) {
-                            this.clickSound.play();
-                            if (this.callback)
-                                this.callback();
-                        }
-                    } else {
-                        this.ok.loadImage('./assets/sprites/buttons/ok_off.png');
-                    }
-                    this.engine.drawer.sprite(this.ok, new Position(bx, by));
-                }
+        var drawer = this.engine.drawer;
+        var sw = this.engine.screenSize().width;
+        var sh = this.engine.screenSize().height;
+        var x = (sw / 2) - (this.size.width / 2);
+        var y = (sh / 2) - (this.size.height / 2);
+
+        // Dark overlay
+        drawer.rectangle(new Position(0, 0), new Size(sw, sh), true, 1, 'rgba(0,0,0,0.7)');
+
+        // Dark panel
+        drawer.rectangle(new Position(x, y), this.size, true, 1, 'rgba(12, 12, 28, 0.95)');
+        drawer.rectangle(new Position(x, y), this.size, false, 2, '#ff8844');
+
+        // Message text
+        drawer.text(this.message, new Position(x + 25, y + 35), 13, 'monospace', 'normal', '#ddeeff');
+
+        if (this.cpu) return;
+
+        if (this.type == 'simple') {
+            this.isOpen = true;
+            var bw = 100;
+            var bh = 36;
+            var bx = x + (this.size.width - bw) / 2;
+            var by = y + this.size.height - bh - 20;
+
+            this._btn1Hovered = this.engine.mouseOnTopOfPosition(new Position(bx, by), new Size(bw, bh));
+            this._drawButton('OK', bx, by, bw, bh, '#2a4a6a', '#3a6a8a', this._btn1Hovered);
+
+            if (this._btn1Hovered && this.engine.mouseClicked(MouseButton.LEFT)) {
+                this.clickSound.play();
+                if (this.callback) this.callback();
             }
         } else {
             this.isOpen = true;
-            let x = (this.engine.screenSize().width / 2) - (this.size.width / 2);
-            let y = (this.engine.screenSize().height / 2) - (this.size.height / 2);
+            var bw = 120;
+            var bh = 36;
+            var gap = 20;
+            var totalW = this.button1 && this.button2 ? bw * 2 + gap : bw;
+            var startX = x + (this.size.width - totalW) / 2;
+            var by = y + this.size.height - bh - 20;
 
-            this.engine.drawer.rectangle(new Position(0, 0), this.engine.screenSize(), true, 5, 'gray', 0.8);
-            this.engine.drawer.rectangle(new Position(x, y), this.size, true, 5, 'white');
-            this.engine.drawer.rectangle(new Position(x, y), this.size, false, 5, 'green');
-
-            let bx1 = x + 50;
-            let by1 = y + 200;
-            let ty = y + 50;
-            let bx2 = bx1 + 300;
-
-            this.engine.drawer.text(this.message, new Position(bx1, ty), 14, 'Consolas');
-            if (!this.cpu) {
-                if (this.button1) {
-                    this.engine.drawer.sprite(this.yes, new Position(bx1, by1));
-                    if (this.engine.mouseOnTopOfPosition(new Position(bx1, by1), new Size(200, 50))) {
-                        this.yes.loadImage(this.button1.imageOn);
-                        if (this.engine.mouseClicked(MouseButton.LEFT)) {
-                            this.clickSound.play();
-                            if (this.button1.callback)
-                                this.button1.callback();
-                        }
-                    } else {
-                        this.yes.loadImage(this.button1.imageOff);
-                    }
+            if (this.button1) {
+                var b1x = startX;
+                this._btn1Hovered = this.engine.mouseOnTopOfPosition(new Position(b1x, by), new Size(bw, bh));
+                this._drawButton(
+                    this.button1.label || 'Yes', b1x, by, bw, bh,
+                    this.button1.color || '#1a5c2a',
+                    this.button1.hoverColor || '#2a7a3e',
+                    this._btn1Hovered
+                );
+                if (this._btn1Hovered && this.engine.mouseClicked(MouseButton.LEFT)) {
+                    this.clickSound.play();
+                    if (this.button1.callback) this.button1.callback();
                 }
+            }
 
-                if (this.button2) {
-                    this.engine.drawer.sprite(this.no, new Position(bx2, by1));
-                    if (this.engine.mouseOnTopOfPosition(new Position(bx2, by1), new Size(200, 50))) {
-                        this.no.loadImage(this.button2.imageOn);
-                        if (this.engine.mouseClicked(MouseButton.LEFT)) {
-                            this.clickSound.play();
-                            if (this.button2.callback)
-                                this.button2.callback();
-                        }
-                    } else {
-                        this.no.loadImage(this.button2.imageOff);
-                    }
+            if (this.button2) {
+                var b2x = this.button1 ? startX + bw + gap : startX;
+                this._btn2Hovered = this.engine.mouseOnTopOfPosition(new Position(b2x, by), new Size(bw, bh));
+                this._drawButton(
+                    this.button2.label || 'No', b2x, by, bw, bh,
+                    this.button2.color || '#5c1a1a',
+                    this.button2.hoverColor || '#7a2a2a',
+                    this._btn2Hovered
+                );
+                if (this._btn2Hovered && this.engine.mouseClicked(MouseButton.LEFT)) {
+                    this.clickSound.play();
+                    if (this.button2.callback) this.button2.callback();
                 }
             }
         }

@@ -2,7 +2,7 @@ class Drawer {
 
     constructor(canvas) {
         this.canvas = canvas;
-        this.ctx = canvas.getContext("2d");
+        this.ctx = canvas.getContext("2d", { alpha: false, desynchronized: true });
         this.resize();
         window.addEventListener('resize', this.resize.bind(this));
     }
@@ -406,22 +406,6 @@ class Drawer {
         // this.circle(particle.position, 25, particle.size.width, particle.size.height, true, 1, particle.color.toString(), particle.fade);
             this.rectangle(particle.position, particle.size, true, 1, particle.color.toString(), particle.fade);
         return true;
-    }
-
-    /**
-     * Draw light spot as circles
-     * @param {*} lightSpot 
-     * @returns 
-     */
-    lightSpot(lightSpot) {
-        if (lightSpot === null || lightSpot === undefined) {
-            console.error('No light spot found to be drawed');
-            return false;
-        }
-
-        for (var i = 1; i < lightSpot.distance + 1; i++) {
-            this.circle(lightSpot.position, i * 10, 0, -1, true, 1, lightSpot.color.toStringWithoutAlpha(), lightSpot.color.alpha * lightSpot.tension);
-        }
     }
 
     /**

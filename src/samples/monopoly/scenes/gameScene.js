@@ -2,8 +2,7 @@ class GameScene extends Scene {
 
     constructor(engine) {
         super('GameScene', engine);
-        this.game = new Game(engine);
-        this.displayLoading = true;
+        this.game = new Game(engine, this);
     }
 
     OnCreate() {

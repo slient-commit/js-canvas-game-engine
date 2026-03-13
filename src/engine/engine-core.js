@@ -40,6 +40,14 @@
             path: "lights/lightTile.js"
         },
         {
+            name: "ShadowCaster script",
+            path: "shadows/shadowCaster.js"
+        },
+        {
+            name: "ShadowSystem script",
+            path: "shadows/shadowSystem.js"
+        },
+        {
             name: "Element script",
             path: "objects/element.js"
         },
@@ -116,6 +124,18 @@
             path: "tilemap/tilemap.js"
         },
         {
+            name: "IsometricUtils script",
+            path: "isometric/isometricUtils.js"
+        },
+        {
+            name: "IsometricMap script",
+            path: "isometric/isometricMap.js"
+        },
+        {
+            name: "PathFinder script",
+            path: "isometric/pathFinder.js"
+        },
+        {
             name: "AssetManager script",
             path: "assets/assetManager.js"
         },
@@ -126,6 +146,22 @@
         {
             name: "Layer script",
             path: "engine-parts/layer.js"
+        },
+        {
+            name: "UILayer script",
+            path: "ui/uiLayer.js"
+        },
+        {
+            name: "UIButton script",
+            path: "ui/uiButton.js"
+        },
+        {
+            name: "UILabel script",
+            path: "ui/uiLabel.js"
+        },
+        {
+            name: "UIPanel script",
+            path: "ui/uiPanel.js"
         },
         {
             name: "Scene script",

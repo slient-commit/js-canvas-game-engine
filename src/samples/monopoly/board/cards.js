@@ -28,7 +28,7 @@ class Cards {
 
         let c3 = new Card('Advance to Mernissa Street. If you pass Go, collect $200', 'chance', this.game);
         c3.action = function() {
-            this.game.goToTile(this.game.currentPlayer.piece, new Position(0, 9));
+            this.game.movements.goToTile(this.game.currentPlayer.piece, new Position(0, 9));
             return true;
         }.bind(c3);
         c3.setPlayer(this.player);

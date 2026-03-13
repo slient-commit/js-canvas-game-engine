@@ -1,135 +1,162 @@
 class Lighting {
-    constructor(engine, tileWidth = 2, tileHeight = 2) {
+    /**
+     * 2D lighting system using offscreen canvas with radial gradients
+     * @param {Engine} engine
+     */
+    constructor(engine) {
         this.engine = engine;
-        this.tileWidth = tileWidth;
-        this.tileHeight = tileHeight;
-        this.width = this.engine.screenSize().width / tileWidth;
-        this.height = this.engine.screenSize().height / tileHeight;
-        this.grid = this.Create2DArray(parseInt(this.width));
-        for (var x = 0; x < this.width; x++) {
-            for (var y = 0; y < this.height; y++) {
-                this.grid[x][y] = new LightTile(new Position(x, y));
+        this.lights = [];
+        this.ambientColor = 'black';
+        this.ambientAlpha = 0.85;
+        this._shadowCanvas = null;
+        this._shadowCtx = null;
+        this._time = 0;
+    }
+
+    /**
+     * Add a light source
+     * @param {LightSpot} light
+     * @returns {LightSpot}
+     */
+    addLightSpot(light) {
+        this.lights.push(light);
+        return light;
+    }
+
+    /**
+     * Remove a light source
+     * @param {LightSpot} light
+     */
+    removeLightSpot(light) {
+        var idx = this.lights.indexOf(light);
+        if (idx !== -1) this.lights.splice(idx, 1);
+    }
+
+    /**
+     * Remove all lights
+     */
+    clearLights() {
+        this.lights = [];
+    }
+
+    /**
+     * Ensure offscreen canvas exists and matches main canvas size
+     */
+    _ensureCanvas() {
+        var w = this.engine.canvas.width;
+        var h = this.engine.canvas.height;
+        if (!this._shadowCanvas || this._shadowCanvas.width !== w || this._shadowCanvas.height !== h) {
+            this._shadowCanvas = document.createElement('canvas');
+            this._shadowCanvas.width = w;
+            this._shadowCanvas.height = h;
+            this._shadowCtx = this._shadowCanvas.getContext('2d');
+        }
+    }
+
+    /**
+     * Draw the lighting overlay
+     * @param {number} elapsedTime - delta time for flicker animation
+     * @param {Camera} camera - optional camera for world-space offset
+     */
+    draw(elapsedTime, camera) {
+        if (elapsedTime === undefined) elapsedTime = 0.016;
+        this._time += elapsedTime;
+        this._ensureCanvas();
+
+        var ctx = this._shadowCtx;
+        var w = this._shadowCanvas.width;
+        var h = this._shadowCanvas.height;
+
+        // Fill with ambient darkness
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = this.ambientColor;
+        ctx.fillRect(0, 0, w, h);
+
+        // Cut light holes using destination-out
+        ctx.globalCompositeOperation = 'destination-out';
+
+        for (var i = 0; i < this.lights.length; i++) {
+            var light = this.lights[i];
+            if (!light.active) continue;
+
+            var lx = light.position.X;
+            var ly = light.position.Y;
+
+            // Apply camera offset
+            if (camera && camera.addOffset) {
+                lx += camera.offset.X;
+                ly += camera.offset.Y;
             }
-        }
-    }
 
-    addLightSpot(lightSpot, convertCordinate = true) {
-        if (lightSpot == null || lightSpot == undefined) {
-            console.error("No light spot was given");
-            return false;
-        }
-        var position = lightSpot.position;
-        if (convertCordinate) {
-            var tmp = this.PositionByGrid(lightSpot.position);
-            position = new Position(tmp.X, tmp.Y);
-            lightSpot.position = new Position(position.X, position.Y);
-        }
-
-        this.grid[position.X][position.Y] = new LightTile(new Position(position.X, position.Y), lightSpot);
-        if (lightSpot.distance > 0) {
-            var distance = (lightSpot.distance * 10) + 1;
-            for (var i = 1; i < lightSpot.distance + 1; i++) {
-                if (position.X - i > 0) {
-                    this.grid[position.X - i][position.Y] = new LightTile(new Position(position.X - i, position.Y), null, 0, true);
-                }
-
-                if (position.Y - i > 0) {
-                    this.grid[position.X][position.Y - i] = new LightTile(new Position(position.X, position.Y - i), null, 0, true);
-                }
-
-                if (position.X + i < this.width) {
-                    this.grid[position.X + i][position.Y] = new LightTile(new Position(position.X + i, position.Y), null, 0, true);
-                }
-
-                if (position.Y + i < this.height) {
-                    this.grid[position.X][position.Y + i] = new LightTile(new Position(position.X, position.Y + i), null, 0, true);
-                }
-
-                if (position.X - i > 0 && position.Y - i > 0) {
-                    this.grid[position.X - i][position.Y - i] = new LightTile(new Position(position.X - i, position.Y - i), null, 0, true);
-                }
-
-                if (position.X - i > 0 && position.Y + i < this.height) {
-                    this.grid[position.X - i][position.Y + i] = new LightTile(new Position(position.X - i, position.Y + i), null, 0, true);
-                }
-
-                if (position.X + i < this.width && position.Y + i < this.height) {
-                    this.grid[position.X + i][position.Y + i] = new LightTile(new Position(position.X + i, position.Y + i), null, 0, true);
-                }
-
-                if (position.X + i < this.width && position.Y - i > 0) {
-                    this.grid[position.X + i][position.Y - i] = new LightTile(new Position(position.X + i, position.Y - i), null, 0, true);
-                }
-
-                for (var k = 1; k < i; k++) {
-                    if (position.X - i > 0 && position.Y - k > 0) {
-                        this.grid[position.X - i][position.Y - k] = new LightTile(new Position(position.X - i, position.Y - k), null, 0, true);
-                    }
-                    if (position.X - k > 0 && position.Y - i > 0) {
-                        this.grid[position.X - k][position.Y - i] = new LightTile(new Position(position.X - k, position.Y - i), null, 0, true);
-                    }
-
-                    if (position.X - i > 0 && position.Y + k < this.height) {
-                        this.grid[position.X - i][position.Y + k] = new LightTile(new Position(position.X - i, position.Y + k), null, 0, true);
-                    }
-
-                    if (position.X - k > 0 && position.Y + i < this.height) {
-                        this.grid[position.X - k][position.Y + i] = new LightTile(new Position(position.X - k, position.Y + i), null, 0, true);
-                    }
-
-                    if (position.X + k < this.width && position.Y + i < this.height) {
-                        this.grid[position.X + k][position.Y + i] = new LightTile(new Position(position.X + k, position.Y + i), null, 0, true);
-                    }
-
-                    if (position.X + i < this.width && position.Y + k < this.height) {
-                        this.grid[position.X + i][position.Y + k] = new LightTile(new Position(position.X + i, position.Y + k), null, 0, true);
-                    }
-
-                    if (position.X + k < this.width && position.Y - i > 0) {
-                        this.grid[position.X + k][position.Y - i] = new LightTile(new Position(position.X + k, position.Y - i), null, 0, true);
-                    }
-
-                    if (position.X + i < this.width && position.Y - k > 0) {
-                        this.grid[position.X + i][position.Y - k] = new LightTile(new Position(position.X + i, position.Y - k), null, 0, true);
-                    }
-                }
+            // Compute effective radius with flicker
+            var radius = light.radius;
+            if (light.flicker > 0) {
+                var f1 = Math.sin(this._time * 8.7 + light._flickerOffset) * 0.5;
+                var f2 = Math.sin(this._time * 13.3 + light._flickerOffset * 2.1) * 0.3;
+                var f3 = Math.sin(this._time * 5.1 + light._flickerOffset * 0.7) * 0.2;
+                radius *= 1.0 + (f1 + f2 + f3) * light.flicker;
             }
+
+            // Radial gradient: bright center -> transparent edge
+            var grad = ctx.createRadialGradient(lx, ly, 0, lx, ly, radius);
+            grad.addColorStop(0, 'rgba(0,0,0,' + light.intensity + ')');
+            grad.addColorStop(0.4, 'rgba(0,0,0,' + (light.intensity * 0.6) + ')');
+            grad.addColorStop(1, 'rgba(0,0,0,0)');
+
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(lx, ly, radius, 0, Math.PI * 2);
+            ctx.fill();
         }
-        return true;
-    }
 
-    Create2DArray(rows) {
-        var arr = [];
-        for (var i = 0; i < rows; i++) {
-            arr[i] = [];
-        }
-        return arr;
-    }
+        // Add colored light glow using lighter blending
+        ctx.globalCompositeOperation = 'lighter';
 
-    PositionByGrid(position) {
-        var result = new Position(position.X, position.Y);
-        result.X = parseInt(result.X / this.width) * this.width;
-        result.Y = parseInt(result.Y / this.height) * this.height;
-        console.log(result);
-        return result;
-    }
+        for (var i = 0; i < this.lights.length; i++) {
+            var light = this.lights[i];
+            if (!light.active) continue;
 
-    draw() {
-        for (var x = 0; x < this.width; x++) {
-            for (var y = 0; y < this.height; y++) {
-                var tile = this.grid[x][y];
-                if (tile.reflexion) {
-                    // this.engine.drawer.rectangle(new Position(x * this.tileWidth, y * this.tileHeight), new Size(this.tileWidth, this.tileHeight), true, 1, new RGB(255, 255, 255).toStringWithoutAlpha(), 0);
-                } else if (tile.lightSpot != null) {
-                    for (var i = 1; i < tile.lightSpot.distance + 1; i++) {
-                        this.engine.drawer.circle(new Position(x * this.tileWidth, y * this.tileHeight), i * 10, 0, -1, true, 1, tile.lightSpot.color.toStringWithoutAlpha(), tile.lightSpot.color.alpha * tile.lightSpot.tension);
-                    }
-                    // this.engine.drawer.rectangle(new Position(x * this.tileWidth, y * this.tileHeight), new Size(this.tileWidth, this.tileHeight), true, 1, tile.lightSpot.color.toStringWithoutAlpha(), tile.lightSpot.color.alpha);
-                } else {
-                    this.engine.drawer.rectangle(new Position(x * this.tileWidth, y * this.tileHeight), new Size(this.tileWidth, this.tileHeight), true, 1, new RGB(0, 0, 0).toStringWithoutAlpha(), .5);
-                }
-                // this.engine.drawer.rectangle(new Position(x * this.tileWidth, y * this.tileHeight), new Size(this.tileWidth, this.tileHeight), false, 1, 'red');
+            // Skip pure white lights (no color tint needed)
+            if (light.color.red === 255 && light.color.green === 255 && light.color.blue === 255) continue;
+
+            var lx = light.position.X;
+            var ly = light.position.Y;
+
+            if (camera && camera.addOffset) {
+                lx += camera.offset.X;
+                ly += camera.offset.Y;
             }
+
+            var radius = light.radius;
+            if (light.flicker > 0) {
+                var f1 = Math.sin(this._time * 8.7 + light._flickerOffset) * 0.5;
+                var f2 = Math.sin(this._time * 13.3 + light._flickerOffset * 2.1) * 0.3;
+                var f3 = Math.sin(this._time * 5.1 + light._flickerOffset * 0.7) * 0.2;
+                radius *= 1.0 + (f1 + f2 + f3) * light.flicker;
+            }
+
+            var r = light.color.red;
+            var g = light.color.green;
+            var b = light.color.blue;
+            var a = light.intensity * 0.3;
+
+            var grad = ctx.createRadialGradient(lx, ly, 0, lx, ly, radius * 0.8);
+            grad.addColorStop(0, 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')');
+            grad.addColorStop(1, 'rgba(' + r + ',' + g + ',' + b + ',0)');
+
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(lx, ly, radius * 0.8, 0, Math.PI * 2);
+            ctx.fill();
         }
+
+        // Draw shadow canvas onto main canvas
+        ctx.globalCompositeOperation = 'source-over';
+        var mainCtx = this.engine.drawer.ctx;
+        mainCtx.save();
+        mainCtx.globalAlpha = this.ambientAlpha;
+        mainCtx.drawImage(this._shadowCanvas, 0, 0);
+        mainCtx.restore();
     }
 }
