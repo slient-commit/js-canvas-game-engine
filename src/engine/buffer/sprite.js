@@ -6,7 +6,10 @@ class Sprite {
         this.spritePath = path;
         this.image = new Image();
         this.imageLoaded = false;
-        Engine.spritesToLoad.push(this);
+        if (path) {
+            this.image.onload = function() { this.imageLoaded = true; }.bind(this);
+            this.image.src = path;
+        }
     }
 
     /**
@@ -24,8 +27,9 @@ class Sprite {
             return false;
         }
 
-        this.image.src = path;
-        Engine.spritesToLoad.push(this);
+        this.imageLoaded = false;
+        this.image.onload = function() { this.imageLoaded = true; }.bind(this);
+        this.image.src = this.spritePath;
         return true;
     }
 
