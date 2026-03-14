@@ -6,16 +6,22 @@ class Sprite {
         this.spritePath = path;
         this.image = new Image();
         this.imageLoaded = false;
+        this.chromaKey = null;
+        this.chromaKeyTolerance = 30;
         if (path) {
-            this.image.onload = function() { this.imageLoaded = true; }.bind(this);
+            var self = this;
+            this.image.onload = function() {
+                self.imageLoaded = true;
+                if (self.chromaKey) self._applyChromaKey();
+            };
             this.image.src = path;
         }
     }
 
     /**
      * Load sprite image from a path
-     * @param {string} path 
-     * @returns 
+     * @param {string} path
+     * @returns
      */
     loadImage(path = null) {
         if (path !== null && path !== undefined) {
@@ -28,15 +34,19 @@ class Sprite {
         }
 
         this.imageLoaded = false;
-        this.image.onload = function() { this.imageLoaded = true; }.bind(this);
+        var self = this;
+        this.image.onload = function() {
+            self.imageLoaded = true;
+            if (self.chromaKey) self._applyChromaKey();
+        };
         this.image.src = this.spritePath;
         return true;
     }
 
     /**
      * Load sprite image from a path
-     * @param {string} path 
-     * @returns 
+     * @param {string} path
+     * @returns
      */
     changeImage(path) {
         if (this.path === null || this.path === undefined) {
@@ -46,6 +56,75 @@ class Sprite {
 
         this.image.src = path;
         return true;
+    }
+
+    /**
+     * Set chroma key color to remove from sprite
+     * @param {string} color - Hex color like '#FF00FF' or '#f0f'
+     * @param {number} [tolerance=30] - Color matching tolerance (0-255)
+     */
+    setChromaKey(color, tolerance) {
+        this.chromaKey = color || null;
+        if (tolerance !== undefined) this.chromaKeyTolerance = tolerance;
+        if (this.imageLoaded && this.chromaKey) {
+            this._applyChromaKey();
+        }
+    }
+
+    /**
+     * Parse a hex color string to {r, g, b}
+     * @param {string} hex
+     * @returns {{r: number, g: number, b: number}}
+     */
+    _parseHexColor(hex) {
+        hex = hex.replace('#', '');
+        if (hex.length === 3) {
+            hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+        }
+        return {
+            r: parseInt(hex.substring(0, 2), 16),
+            g: parseInt(hex.substring(2, 4), 16),
+            b: parseInt(hex.substring(4, 6), 16)
+        };
+    }
+
+    /**
+     * Apply chroma key removal — replaces this.image with a processed canvas
+     */
+    _applyChromaKey() {
+        if (!this.chromaKey || !this.image) return;
+
+        // Use the original image if we already replaced it before
+        var src = this._originalImage || this.image;
+        var w = src.width || this.width;
+        var h = src.height || this.height;
+        if (w === 0 || h === 0) return;
+
+        // Keep a reference to the original image for re-processing
+        if (!this._originalImage) {
+            this._originalImage = this.image;
+        }
+
+        var canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(src, 0, 0);
+
+        var imageData = ctx.getImageData(0, 0, w, h);
+        var pixels = imageData.data;
+        var key = this._parseHexColor(this.chromaKey);
+        var tol = this.chromaKeyTolerance;
+
+        for (var i = 0; i < pixels.length; i += 4) {
+            var dist = Math.abs(pixels[i] - key.r) + Math.abs(pixels[i + 1] - key.g) + Math.abs(pixels[i + 2] - key.b);
+            if (dist <= tol) {
+                pixels[i + 3] = 0;
+            }
+        }
+
+        ctx.putImageData(imageData, 0, 0);
+        this.image = canvas;
     }
 
     /**
@@ -60,12 +139,17 @@ class Sprite {
      * @returns {Object}
      */
     toJSON() {
-        return {
+        var data = {
             type: 'sprite',
             width: this.width,
             height: this.height,
             path: this.spritePath
         };
+        if (this.chromaKey) {
+            data.chromaKey = this.chromaKey;
+            data.chromaKeyTolerance = this.chromaKeyTolerance;
+        }
+        return data;
     }
 
     /**
@@ -74,7 +158,11 @@ class Sprite {
      * @returns {Sprite}
      */
     static fromJSON(data) {
-        return new Sprite(data.width, data.height, data.path || null);
+        var spr = new Sprite(data.width, data.height, data.path || null);
+        if (data.chromaKey) {
+            spr.setChromaKey(data.chromaKey, data.chromaKeyTolerance !== undefined ? data.chromaKeyTolerance : 30);
+        }
+        return spr;
     }
 
     /**
@@ -87,6 +175,9 @@ class Sprite {
         if (!data) return null;
         if (data.type === 'spritesheet') {
             return SpriteSheet.fromJSON(data);
+        }
+        if (data.type === 'spriteatlas') {
+            return SpriteAtlas.fromJSON(data);
         }
         return Sprite.fromJSON(data);
     }

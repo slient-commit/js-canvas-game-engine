@@ -12,7 +12,7 @@
     "shadows/shadowCaster.js", "shadows/shadowSystem.js",
     "objects/element.js", "objects/camera.js",
     "cameras/fixedCamera.js", "cameras/worldCamera.js",
-    "buffer/drawer.js", "buffer/sprite.js", "buffer/spriteSheet.js",
+    "buffer/drawer.js", "buffer/sprite.js", "buffer/spriteSheet.js", "buffer/spriteAtlas.js",
     "audio/sound.js", "audio/soundManager.js",
     "animations/animation.js", "animations/geometricAnimation.js",
     "physics/collision.js", "input/inputManager.js",
@@ -67,7 +67,7 @@
         console.log('[EditorBridge] All engine scripts loaded.');
         // Ensure engine globals are on window for new Function() access
         // (class/const declarations create lexical bindings, not window properties)
-        var globals = ['Keys', 'Collision', 'Vec2', 'Sprite', 'SpriteSheet',
+        var globals = ['Keys', 'Collision', 'Vec2', 'Sprite', 'SpriteSheet', 'SpriteAtlas',
           'GameObject', 'Element', 'Layer', 'UILayer', 'Scene', 'Engine',
           'Camera', 'WorldCamera', 'Size', 'MouseButton',
           'ParticleEmitter', 'RGB', 'UILabel', 'UIPanel', 'UIButton', 'Fire', 'Particle',
@@ -461,16 +461,28 @@
 
   function createSpriteFromData(data) {
     if (!data) return new Sprite(32, 32, null);
+    var spr;
     if (data.type === 'spritesheet') {
-      return new SpriteSheet(
+      spr = new SpriteSheet(
         data.name || 'anim', data.width, data.height,
         data.frameSpeed || 6, data.startFrame || 0, data.endFrame || 0,
         resolveAssetPath(data.path),
         data.once || false, null,
         data.once_max_frame !== undefined ? data.once_max_frame : -1
       );
+    } else if (data.type === 'spriteatlas') {
+      spr = new SpriteAtlas(
+        resolveAssetPath(data.path),
+        data.regions || {},
+        data.currentRegion || null
+      );
+    } else {
+      spr = new Sprite(data.width || 32, data.height || 32, resolveAssetPath(data.path));
     }
-    return new Sprite(data.width || 32, data.height || 32, resolveAssetPath(data.path));
+    if (data.chromaKey && spr.setChromaKey) {
+      spr.setChromaKey(data.chromaKey, data.chromaKeyTolerance !== undefined ? data.chromaKeyTolerance : 30);
+    }
+    return spr;
   }
 
   function resolveAssetPath(assetPath) {

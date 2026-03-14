@@ -169,14 +169,46 @@ class Drawer {
     }
 
     /**
-     * Draw Game object sprite, or SpriteSheet
-     * @param {GameObject} gameObject 
+     * Draw a SpriteAtlas region
+     * @param {SpriteAtlas} sprite
+     * @param {Position} position
+     * @param {number} opacity
+     * @param {Camera} camera
+     * @returns bool
+     */
+    spriteAtlas(sprite, position, opacity = 1, camera = null) {
+        if (!sprite || !sprite.image) return false;
+        var r = sprite.getRegion();
+        if (!r) return false;
+        this.ctx.globalAlpha = opacity;
+        if (camera !== null) {
+            camera.updateMaxPosition();
+            if (position.X >= camera.position.X && (position.X + r.width) <= camera.maxPosition.X && position.Y >= camera.position.Y && position.Y <= camera.maxPosition.Y) {
+                if (camera.addOffset) {
+                    this.ctx.drawImage(sprite.image, r.x, r.y, r.width, r.height, position.X + camera.offset.X, position.Y + camera.offset.Y, r.width, r.height);
+                    this.ctx.globalAlpha = 1.0;
+                    return true;
+                }
+            }
+        }
+        this.ctx.drawImage(sprite.image, r.x, r.y, r.width, r.height, position.X, position.Y, r.width, r.height);
+        this.ctx.globalAlpha = 1.0;
+        return true;
+    }
+
+    /**
+     * Draw Game object sprite, SpriteSheet, or SpriteAtlas
+     * @param {GameObject} gameObject
      * @returns bool
      */
     gameObject(gameObject, opacity = 1, camera = null) {
         if (gameObject === null || gameObject === undefined) {
             console.error('No gameObject found to be drawed');
             return false;
+        }
+        if (gameObject.sprite && gameObject.sprite._isAtlas) {
+            this.spriteAtlas(gameObject.sprite, gameObject.position, opacity, camera);
+            return true;
         }
         if (!gameObject.hasSimpleSprite) {
             this.spriteSheet(gameObject.sprite, gameObject.position, opacity, camera);
@@ -419,13 +451,18 @@ class Drawer {
             return false;
         }
 
-        if (element.sprite instanceof Sprite) {
-            this.sprite(element.sprite, element.position, opacity, camera);
+        if (element.sprite && element.sprite._isAtlas) {
+            this.spriteAtlas(element.sprite, element.position, opacity, camera);
             return true;
         }
 
         if (element.sprite instanceof SpriteSheet) {
             this.spriteSheet(element.sprite, element.position, opacity, camera);
+            return true;
+        }
+
+        if (element.sprite instanceof Sprite) {
+            this.sprite(element.sprite, element.position, opacity, camera);
             return true;
         }
 

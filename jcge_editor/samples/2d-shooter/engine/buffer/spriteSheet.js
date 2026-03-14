@@ -26,6 +26,7 @@ class SpriteSheet extends Sprite {
         this.image.onload = function() {
             self.imageLoaded = true;
             self.framesPerRow = Math.floor(self.image.width / self.dWidth);
+            if (self.chromaKey) self._applyChromaKey();
         };
         if (imagePath) this.image.src = imagePath;
     }
@@ -74,7 +75,7 @@ class SpriteSheet extends Sprite {
      * @returns {Object}
      */
     toJSON() {
-        return {
+        var data = {
             type: 'spritesheet',
             name: this.name,
             width: this.dWidth,
@@ -86,6 +87,11 @@ class SpriteSheet extends Sprite {
             once: this.once,
             once_max_frame: this.once_max_frame
         };
+        if (this.chromaKey) {
+            data.chromaKey = this.chromaKey;
+            data.chromaKeyTolerance = this.chromaKeyTolerance;
+        }
+        return data;
     }
 
     /**
@@ -95,7 +101,7 @@ class SpriteSheet extends Sprite {
      * @returns {SpriteSheet}
      */
     static fromJSON(data) {
-        return new SpriteSheet(
+        var sheet = new SpriteSheet(
             data.name,
             data.width,
             data.height,
@@ -107,5 +113,9 @@ class SpriteSheet extends Sprite {
             null,
             data.once_max_frame !== undefined ? data.once_max_frame : -1
         );
+        if (data.chromaKey) {
+            sheet.setChromaKey(data.chromaKey, data.chromaKeyTolerance !== undefined ? data.chromaKeyTolerance : 30);
+        }
+        return sheet;
     }
 }

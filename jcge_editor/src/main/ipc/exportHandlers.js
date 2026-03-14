@@ -270,6 +270,8 @@ function generateGameObjectCode(varName, obj, layerVar) {
   if (obj.sprite && obj.sprite.path) {
     if (obj.sprite.type === 'spritesheet') {
       code += `    var ${varName}_sprite = new SpriteSheet('${obj.sprite.name || 'anim'}', ${obj.sprite.width}, ${obj.sprite.height}, ${obj.sprite.frameSpeed || 6}, ${obj.sprite.startFrame || 0}, ${obj.sprite.endFrame || 0}, '${obj.sprite.path}');\n`;
+    } else if (obj.sprite.type === 'spriteatlas') {
+      code += `    var ${varName}_sprite = new SpriteAtlas('${obj.sprite.path}', ${JSON.stringify(obj.sprite.regions || {})}, '${obj.sprite.currentRegion || ''}');\n`;
     } else {
       code += `    var ${varName}_sprite = new Sprite(${obj.sprite.width || 32}, ${obj.sprite.height || 32}, '${obj.sprite.path}');\n`;
     }
@@ -277,6 +279,9 @@ function generateGameObjectCode(varName, obj, layerVar) {
     code += `    var ${varName}_sprite = new Sprite(${obj.sprite ? obj.sprite.width : 32}, ${obj.sprite ? obj.sprite.height : 32}, null);\n`;
   }
 
+  if (obj.sprite && obj.sprite.chromaKey) {
+    code += `    ${varName}_sprite.setChromaKey('${obj.sprite.chromaKey}', ${obj.sprite.chromaKeyTolerance !== undefined ? obj.sprite.chromaKeyTolerance : 30});\n`;
+  }
   code += `    var ${varName} = new GameObject(${varName}_sprite, new Vec2(${obj.position.X}, ${obj.position.Y}), ${obj.opacity !== undefined ? obj.opacity : 1});\n`;
   code += `    ${varName}.name = '${obj.name || 'GameObject'}';\n`;
 
@@ -314,9 +319,16 @@ function generateElementCode(varName, el, layerVar) {
 
   // Default element
   if (el.sprite && el.sprite.path) {
-    code += `    var ${varName}_sprite = new Sprite(${el.sprite.width || 32}, ${el.sprite.height || 32}, '${el.sprite.path}');\n`;
+    if (el.sprite.type === 'spriteatlas') {
+      code += `    var ${varName}_sprite = new SpriteAtlas('${el.sprite.path}', ${JSON.stringify(el.sprite.regions || {})}, '${el.sprite.currentRegion || ''}');\n`;
+    } else {
+      code += `    var ${varName}_sprite = new Sprite(${el.sprite.width || 32}, ${el.sprite.height || 32}, '${el.sprite.path}');\n`;
+    }
   } else {
     code += `    var ${varName}_sprite = new Sprite(${el.sprite ? el.sprite.width : 32}, ${el.sprite ? el.sprite.height : 32}, null);\n`;
+  }
+  if (el.sprite && el.sprite.chromaKey) {
+    code += `    ${varName}_sprite.setChromaKey('${el.sprite.chromaKey}', ${el.sprite.chromaKeyTolerance !== undefined ? el.sprite.chromaKeyTolerance : 30});\n`;
   }
   code += `    var ${varName} = new Element(${varName}_sprite, new Vec2(${el.position.X}, ${el.position.Y}), ${el.opacity !== undefined ? el.opacity : 1});\n`;
   if (el.showIt === false) code += `    ${varName}.hide();\n`;

@@ -320,6 +320,8 @@
     <a href="#api-gameobject" class="sub">GameObject</a>
     <a href="#api-element" class="sub">Element</a>
     <a href="#api-sprite" class="sub">Sprite &amp; SpriteSheet</a>
+    <a href="#api-spriteatlas" class="sub">SpriteAtlas</a>
+    <a href="#api-chromakey" class="sub">Chroma Key</a>
     <a href="#api-vec2" class="sub">Vec2</a>
     <a href="#api-collision" class="sub">Collision</a>
     <a href="#api-input" class="sub">Input &amp; Keys</a>
@@ -686,6 +688,89 @@ cam.shake(<span class="num">5</span>, <span class="num">0.3</span>); <span class
   <span class="kw">null</span>,      <span class="cm">// callback on end</span>
   -<span class="num">1</span>         <span class="cm">// once_max_frame</span>
 );</code></pre>
+
+<!-- ── SpriteAtlas ── -->
+<h3 id="api-spriteatlas">SpriteAtlas</h3>
+<p>A sprite atlas holds <strong>named regions</strong> within a single image. Unlike a SpriteSheet (uniform grid), each region can have its own position and size. Ideal for images where sprites are packed at arbitrary locations (e.g., a car with 8 directions, each a different size and position in the image).</p>
+
+<pre><code><span class="kw">var</span> atlas = <span class="kw">new</span> <span class="ty">SpriteAtlas</span>(<span class="str">'assets/sprites/car.png'</span>, {
+  <span class="str">'north'</span>:     { x: <span class="num">0</span>,   y: <span class="num">0</span>,   width: <span class="num">48</span>, height: <span class="num">64</span> },
+  <span class="str">'northeast'</span>: { x: <span class="num">60</span>,  y: <span class="num">10</span>,  width: <span class="num">56</span>, height: <span class="num">60</span> },
+  <span class="str">'east'</span>:      { x: <span class="num">130</span>, y: <span class="num">5</span>,   width: <span class="num">64</span>, height: <span class="num">48</span> },
+  <span class="str">'southeast'</span>: { x: <span class="num">200</span>, y: <span class="num">12</span>,  width: <span class="num">56</span>, height: <span class="num">60</span> },
+  <span class="str">'south'</span>:     { x: <span class="num">270</span>, y: <span class="num">0</span>,   width: <span class="num">48</span>, height: <span class="num">64</span> },
+  <span class="str">'southwest'</span>: { x: <span class="num">340</span>, y: <span class="num">12</span>,  width: <span class="num">56</span>, height: <span class="num">60</span> },
+  <span class="str">'west'</span>:      { x: <span class="num">410</span>, y: <span class="num">5</span>,   width: <span class="num">64</span>, height: <span class="num">48</span> },
+  <span class="str">'northwest'</span>: { x: <span class="num">480</span>, y: <span class="num">10</span>,  width: <span class="num">56</span>, height: <span class="num">60</span> }
+}, <span class="str">'north'</span>);  <span class="cm">// default region</span>
+
+<span class="cm">// Use with a GameObject</span>
+<span class="kw">var</span> car = <span class="kw">new</span> <span class="ty">GameObject</span>(atlas, <span class="kw">new</span> <span class="ty">Vec2</span>(<span class="num">100</span>, <span class="num">100</span>));
+layer.registerGameObject(car);
+
+<span class="cm">// Switch to a different region</span>
+atlas.setRegion(<span class="str">'east'</span>);  <span class="cm">// width &amp; height update automatically</span></code></pre>
+
+<h4>Constructor</h4>
+<pre><code><span class="kw">new</span> <span class="ty">SpriteAtlas</span>(imagePath, regions, defaultRegion)</code></pre>
+
+<table>
+  <tr><th>Parameter</th><th>Type</th><th>Description</th></tr>
+  <tr><td><code>imagePath</code></td><td>String</td><td>Path to the atlas image file</td></tr>
+  <tr><td><code>regions</code></td><td>Object</td><td>Map of region names to <code>{ x, y, width, height }</code></td></tr>
+  <tr><td><code>defaultRegion</code></td><td>String</td><td>Name of the initial region to display</td></tr>
+</table>
+
+<h4>Methods</h4>
+<div class="method"><div class="method-sig">setRegion(name)</div><div class="method-desc">Switch to a named region. Updates <code>width</code> and <code>height</code> to match the region.</div></div>
+<div class="method"><div class="method-sig">getRegion()</div><div class="method-desc">Returns the current region's <code>{ x, y, width, height }</code> in the atlas image.</div></div>
+<div class="method"><div class="method-sig">getRegionNames()</div><div class="method-desc">Returns an array of all region names.</div></div>
+
+<h4>Editor Support</h4>
+<p>In the Properties panel, select <strong>SpriteAtlas</strong> from the sprite Type dropdown. Then:</p>
+<ol>
+  <li>Choose an image asset</li>
+  <li>Click <strong>+</strong> under Regions to add named regions</li>
+  <li>Set <strong>X, Y, W, H</strong> (source rectangle in the image) for each region</li>
+  <li>Select the active region from the Region dropdown</li>
+</ol>
+<p>In scene scripts, switch regions at runtime with <code>atlas.setRegion('name')</code>.</p>
+
+<div class="callout callout-tip">
+  <div class="callout-label tip">When to use which</div>
+  <ul style="margin-top: 6px;">
+    <li><strong>Sprite</strong> &mdash; Single image, one frame</li>
+    <li><strong>SpriteSheet</strong> &mdash; Single image, uniform grid of frames (animation)</li>
+    <li><strong>SpriteAtlas</strong> &mdash; Single image, named regions at arbitrary positions and sizes</li>
+  </ul>
+</div>
+
+<!-- ── Chroma Key ── -->
+<h3 id="api-chromakey">Chroma Key</h3>
+<p>Remove a solid background color from any sprite type. The engine processes the image once on load, making matching pixels transparent. Works with Sprite, SpriteSheet, and SpriteAtlas.</p>
+
+<pre><code><span class="cm">// Remove green background</span>
+<span class="kw">var</span> spr = <span class="kw">new</span> <span class="ty">Sprite</span>(<span class="num">64</span>, <span class="num">64</span>, <span class="str">'player.png'</span>);
+spr.<span class="fn">setChromaKey</span>(<span class="str">'#00FF00'</span>);
+
+<span class="cm">// Custom tolerance (0–255, default 30)</span>
+spr.<span class="fn">setChromaKey</span>(<span class="str">'#00FF00'</span>, <span class="num">50</span>);
+
+<span class="cm">// Works on SpriteSheet and SpriteAtlas too</span>
+sheet.<span class="fn">setChromaKey</span>(<span class="str">'#FF00FF'</span>, <span class="num">20</span>);
+atlas.<span class="fn">setChromaKey</span>(<span class="str">'#0000FF'</span>);</code></pre>
+
+<table>
+  <tr><th>Param</th><th>Type</th><th>Description</th></tr>
+  <tr><td><code>color</code></td><td>string</td><td>Hex color to remove, e.g. <code>'#FF00FF'</code></td></tr>
+  <tr><td><code>tolerance</code></td><td>number</td><td>Matching tolerance (0–255). Higher = more aggressive. Default: <code>30</code></td></tr>
+</table>
+
+<p><strong>Editor:</strong> In the Properties panel, set the <strong>Chroma Key</strong> color picker and adjust <strong>Tolerance</strong>. Click <strong>&times;</strong> to clear.</p>
+
+<div class="callout">
+  Chroma key is applied once at load time (no per-frame cost). The original image is preserved internally &mdash; calling <code>setChromaKey</code> again re-processes from the original.
+</div>
 
 <!-- ── Vec2 ── -->
 <h3 id="api-vec2">Vec2</h3>

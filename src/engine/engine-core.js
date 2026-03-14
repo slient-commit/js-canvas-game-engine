@@ -76,6 +76,10 @@
             path: "buffer/spriteSheet.js"
         },
         {
+            name: "SpriteAtlas script",
+            path: "buffer/spriteAtlas.js"
+        },
+        {
             name: "Sound script",
             path: "audio/sound.js"
         },

@@ -5,6 +5,7 @@ import { getAssetUrl } from './AssetManager';
 export default function PropertiesPanel() {
   const state = useProject();
   const dispatch = useProjectDispatch();
+  const [newRegionName, setNewRegionName] = React.useState('');
 
   if (!state.project) {
     return (
@@ -268,6 +269,50 @@ export default function PropertiesPanel() {
         <div className="section">
           <div className="section-title">Sprite</div>
           <div className="prop-row">
+            <span className="prop-label">Type</span>
+            <div className="prop-value">
+              <select
+                className="input"
+                value={selectedObj.sprite?.type || 'sprite'}
+                onChange={e => {
+                  const newType = e.target.value;
+                  if (newType === 'spriteatlas') {
+                    updateProp('sprite', {
+                      type: 'spriteatlas',
+                      path: selectedObj.sprite?.path || null,
+                      width: selectedObj.sprite?.width || 32,
+                      height: selectedObj.sprite?.height || 32,
+                      regions: selectedObj.sprite?.regions || {},
+                      currentRegion: selectedObj.sprite?.currentRegion || null
+                    });
+                  } else if (newType === 'spritesheet') {
+                    updateProp('sprite', {
+                      type: 'spritesheet',
+                      path: selectedObj.sprite?.path || null,
+                      width: selectedObj.sprite?.width || 32,
+                      height: selectedObj.sprite?.height || 32,
+                      name: selectedObj.sprite?.name || 'anim',
+                      frameSpeed: selectedObj.sprite?.frameSpeed || 6,
+                      startFrame: selectedObj.sprite?.startFrame || 0,
+                      endFrame: selectedObj.sprite?.endFrame || 0
+                    });
+                  } else {
+                    updateProp('sprite', {
+                      type: 'sprite',
+                      path: selectedObj.sprite?.path || null,
+                      width: selectedObj.sprite?.width || 32,
+                      height: selectedObj.sprite?.height || 32
+                    });
+                  }
+                }}
+              >
+                <option value="sprite">Sprite</option>
+                <option value="spritesheet">SpriteSheet</option>
+                <option value="spriteatlas">SpriteAtlas</option>
+              </select>
+            </div>
+          </div>
+          <div className="prop-row">
             <span className="prop-label">Asset</span>
             <div className="prop-value">
               <select
@@ -276,25 +321,20 @@ export default function PropertiesPanel() {
                 onChange={e => {
                   const val = e.target.value;
                   if (!val) {
-                    updateProp('sprite', null);
+                    updateProp('sprite', { ...selectedObj.sprite, path: null });
                   } else {
                     const asset = (state.project.assets.sprites || []).find(a => 'assets/sprites/' + a.filename === val);
                     const img = new Image();
                     img.onload = () => {
                       updateProp('sprite', {
-                        type: 'sprite',
-                        width: img.naturalWidth,
-                        height: img.naturalHeight,
+                        ...selectedObj.sprite,
+                        width: selectedObj.sprite?.type === 'spriteatlas' ? (selectedObj.sprite.width || 32) : img.naturalWidth,
+                        height: selectedObj.sprite?.type === 'spriteatlas' ? (selectedObj.sprite.height || 32) : img.naturalHeight,
                         path: val
                       });
                     };
                     img.onerror = () => {
-                      updateProp('sprite', {
-                        type: 'sprite',
-                        width: 32,
-                        height: 32,
-                        path: val
-                      });
+                      updateProp('sprite', { ...selectedObj.sprite, path: val });
                     };
                     img.src = getAssetUrl(state, 'sprites', asset ? asset.filename : val);
                   }
@@ -322,21 +362,185 @@ export default function PropertiesPanel() {
                 </div>
               )}
               <div className="prop-row">
-                <span className="prop-label">Width</span>
-                <div className="prop-value">
-                  <input className="input input-sm" type="number"
-                    value={selectedObj.sprite.width || 32}
-                    onChange={e => updateProp('sprite', { ...selectedObj.sprite, width: parseInt(e.target.value) || 32 })} />
+                <span className="prop-label">Chroma Key</span>
+                <div className="prop-value" style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+                  <input type="color"
+                    style={{ width: 28, height: 22, padding: 0, border: '1px solid var(--border)', borderRadius: 3, cursor: 'pointer' }}
+                    value={selectedObj.sprite.chromaKey || '#00ff00'}
+                    onChange={e => updateProp('sprite', { ...selectedObj.sprite, chromaKey: e.target.value })}
+                  />
+                  <input className="input input-sm" type="text" placeholder="#00FF00"
+                    style={{ flex: 1, padding: '1px 4px', fontSize: 11 }}
+                    value={selectedObj.sprite.chromaKey || ''}
+                    onChange={e => updateProp('sprite', { ...selectedObj.sprite, chromaKey: e.target.value || null })}
+                  />
+                  {selectedObj.sprite.chromaKey && (
+                    <button className="btn btn-sm" style={{ padding: '1px 5px', fontSize: 10 }}
+                      onClick={() => updateProp('sprite', { ...selectedObj.sprite, chromaKey: null, chromaKeyTolerance: 30 })}
+                    >&times;</button>
+                  )}
                 </div>
               </div>
-              <div className="prop-row">
-                <span className="prop-label">Height</span>
-                <div className="prop-value">
-                  <input className="input input-sm" type="number"
-                    value={selectedObj.sprite.height || 32}
-                    onChange={e => updateProp('sprite', { ...selectedObj.sprite, height: parseInt(e.target.value) || 32 })} />
+              {selectedObj.sprite.chromaKey && (
+                <div className="prop-row">
+                  <span className="prop-label">Tolerance</span>
+                  <div className="prop-value">
+                    <input className="input input-sm" type="number" min="0" max="255"
+                      value={selectedObj.sprite.chromaKeyTolerance !== undefined ? selectedObj.sprite.chromaKeyTolerance : 30}
+                      onChange={e => updateProp('sprite', { ...selectedObj.sprite, chromaKeyTolerance: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
+              {selectedObj.sprite.type !== 'spriteatlas' && (
+                <>
+                  <div className="prop-row">
+                    <span className="prop-label">Width</span>
+                    <div className="prop-value">
+                      <input className="input input-sm" type="number"
+                        value={selectedObj.sprite.width || 32}
+                        onChange={e => updateProp('sprite', { ...selectedObj.sprite, width: parseInt(e.target.value) || 32 })} />
+                    </div>
+                  </div>
+                  <div className="prop-row">
+                    <span className="prop-label">Height</span>
+                    <div className="prop-value">
+                      <input className="input input-sm" type="number"
+                        value={selectedObj.sprite.height || 32}
+                        onChange={e => updateProp('sprite', { ...selectedObj.sprite, height: parseInt(e.target.value) || 32 })} />
+                    </div>
+                  </div>
+                </>
+              )}
+              {selectedObj.sprite.type === 'spritesheet' && (
+                <>
+                  <div className="prop-row">
+                    <span className="prop-label">Name</span>
+                    <div className="prop-value">
+                      <input className="input input-sm"
+                        value={selectedObj.sprite.name || 'anim'}
+                        onChange={e => updateProp('sprite', { ...selectedObj.sprite, name: e.target.value })} />
+                    </div>
+                  </div>
+                  <div className="prop-row">
+                    <span className="prop-label">Frame Speed</span>
+                    <div className="prop-value">
+                      <input className="input input-sm" type="number"
+                        value={selectedObj.sprite.frameSpeed || 6}
+                        onChange={e => updateProp('sprite', { ...selectedObj.sprite, frameSpeed: parseInt(e.target.value) || 6 })} />
+                    </div>
+                  </div>
+                  <div className="prop-row">
+                    <span className="prop-label">Start Frame</span>
+                    <div className="prop-value">
+                      <input className="input input-sm" type="number"
+                        value={selectedObj.sprite.startFrame || 0}
+                        onChange={e => updateProp('sprite', { ...selectedObj.sprite, startFrame: parseInt(e.target.value) || 0 })} />
+                    </div>
+                  </div>
+                  <div className="prop-row">
+                    <span className="prop-label">End Frame</span>
+                    <div className="prop-value">
+                      <input className="input input-sm" type="number"
+                        value={selectedObj.sprite.endFrame || 0}
+                        onChange={e => updateProp('sprite', { ...selectedObj.sprite, endFrame: parseInt(e.target.value) || 0 })} />
+                    </div>
+                  </div>
+                </>
+              )}
+              {selectedObj.sprite.type === 'spriteatlas' && (
+                <>
+                  <div className="prop-row">
+                    <span className="prop-label">Region</span>
+                    <div className="prop-value">
+                      {Object.keys(selectedObj.sprite.regions || {}).length > 0 ? (
+                        <select className="input"
+                          value={selectedObj.sprite.currentRegion || ''}
+                          onChange={e => updateProp('sprite', { ...selectedObj.sprite, currentRegion: e.target.value })}
+                        >
+                          {Object.keys(selectedObj.sprite.regions).map(name => (
+                            <option key={name} value={name}>{name}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>No regions defined</span>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ padding: '4px 12px' }}>
+                    <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>
+                      Regions
+                    </div>
+                    <div style={{ display: 'flex', gap: 3, marginBottom: 4 }}>
+                      <input className="input input-sm" type="text" placeholder="Region name"
+                        style={{ flex: 1, padding: '1px 4px', fontSize: 11 }}
+                        value={newRegionName}
+                        onChange={e => setNewRegionName(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' && newRegionName.trim()) {
+                            const regions = { ...(selectedObj.sprite.regions || {}) };
+                            regions[newRegionName.trim()] = { x: 0, y: 0, width: 32, height: 32 };
+                            const cur = selectedObj.sprite.currentRegion || newRegionName.trim();
+                            updateProp('sprite', { ...selectedObj.sprite, regions, currentRegion: cur });
+                            setNewRegionName('');
+                          }
+                        }}
+                      />
+                      <button className="btn btn-sm" style={{ padding: '1px 5px', fontSize: 10 }}
+                        onClick={() => {
+                          if (!newRegionName.trim()) return;
+                          const regions = { ...(selectedObj.sprite.regions || {}) };
+                          regions[newRegionName.trim()] = { x: 0, y: 0, width: 32, height: 32 };
+                          const cur = selectedObj.sprite.currentRegion || newRegionName.trim();
+                          updateProp('sprite', { ...selectedObj.sprite, regions, currentRegion: cur });
+                          setNewRegionName('');
+                        }}
+                      >+</button>
+                    </div>
+                    {Object.entries(selectedObj.sprite.regions || {}).map(([name, r]) => (
+                      <div key={name} style={{
+                        background: name === selectedObj.sprite.currentRegion ? 'var(--bg-active)' : 'var(--bg-surface)',
+                        border: '1px solid var(--border)',
+                        borderRadius: 4, padding: '4px 6px', marginBottom: 3, fontSize: 11
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
+                          <strong style={{ color: 'var(--accent)' }}>{name}</strong>
+                          <button style={{ border: 'none', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13, lineHeight: 1 }}
+                            onClick={() => {
+                              const regions = { ...(selectedObj.sprite.regions || {}) };
+                              delete regions[name];
+                              const cur = selectedObj.sprite.currentRegion === name
+                                ? (Object.keys(regions)[0] || null)
+                                : selectedObj.sprite.currentRegion;
+                              updateProp('sprite', { ...selectedObj.sprite, regions, currentRegion: cur });
+                            }}
+                          >&times;</button>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3 }}>
+                          {['x', 'y', 'width', 'height'].map(prop => (
+                            <div key={prop} style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                              <span style={{ color: 'var(--text-muted)', fontSize: 10, width: 12 }}>{prop[0].toUpperCase()}</span>
+                              <input className="input input-sm" type="number" style={{ width: '100%', padding: '1px 4px' }}
+                                value={r[prop]}
+                                onChange={e => {
+                                  const regions = { ...(selectedObj.sprite.regions || {}) };
+                                  regions[name] = { ...regions[name], [prop]: parseInt(e.target.value) || 0 };
+                                  const spr = { ...selectedObj.sprite, regions };
+                                  if (name === selectedObj.sprite.currentRegion) {
+                                    spr.width = regions[name].width;
+                                    spr.height = regions[name].height;
+                                  }
+                                  updateProp('sprite', spr);
+                                }}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>
