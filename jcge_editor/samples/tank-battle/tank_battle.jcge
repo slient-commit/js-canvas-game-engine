@@ -1,0 +1,114 @@
+{
+  "version": 1,
+  "name": "Tank Battle",
+  "filePath": "C:\\repos\\mine\\js-canvas-game-engine\\jcge_editor\\samples\\tank-battle\\tank_battle.jcge",
+  "settings": {
+    "canvasWidth": 960,
+    "canvasHeight": 540,
+    "backgroundColor": "#1a1a2e",
+    "displayFPS": true,
+    "jumpEngineIntro": true
+  },
+  "scenes": [
+    {
+      "id": "scene_menu",
+      "name": "MenuScene",
+      "isDefault": true,
+      "camera": null,
+      "layers": [
+        {
+          "id": "layer_menu_bg",
+          "name": "background",
+          "zOrder": 0,
+          "isUI": false,
+          "gameObjects": [],
+          "elements": []
+        },
+        {
+          "id": "layer_menu_ui",
+          "name": "ui",
+          "zOrder": 10,
+          "isUI": true,
+          "gameObjects": [],
+          "elements": []
+        }
+      ],
+      "script": {
+        "onCreate": "var uiLayer = this.layers[this.layers.length - 1].layer;\n\nthis.titleLabel = new UILabel('TANK BATTLE', new Vec2(310, 200), { fontSize: 48, color: '#e8d44d' });\nuiLayer.registerElement(this.titleLabel);\n\nthis.startLabel = new UILabel('Press SPACE to Start', new Vec2(365, 270), { fontSize: 18, color: '#aaaaaa' });\nuiLayer.registerElement(this.startLabel);\n\nthis.controlsLabel = new UILabel('Arrow Keys: Aim & Power  |  SPACE: Fire', new Vec2(295, 310), { fontSize: 14, color: '#666666' });\nuiLayer.registerElement(this.controlsLabel);\n\nthis.blinkTimer = 0;\n\n// Decorative terrain silhouette\nthis.menuTerrain = [];\nfor (var x = 0; x < 120; x++) {\n  this.menuTerrain.push(380 + Math.sin(x * 0.05) * 40 + Math.sin(x * 0.12) * 25 + Math.sin(x * 0.02) * 30);\n}",
+        "onUpdate": "var ctx = engine.drawer.ctx;\nvar W = 960;\nvar H = 540;\n\n// Sky gradient\nengine.drawer.gradient(new Vec2(0, 0), new Size(W, H), new Vec2(0, 0), new Vec2(0, H), '#0a0a2e', '#1a2a4a');\n\n// Decorative terrain\nctx.fillStyle = '#2d5a27';\nfor (var x = 0; x < 120; x++) {\n  var ty = this.menuTerrain[x];\n  ctx.fillRect(x * 8, ty, 8, H - ty);\n}\n\n// Blink start text\nthis.blinkTimer += elapsedTime;\nif (this.blinkTimer > 1.0) this.blinkTimer = 0;\nthis.startLabel.showIt = this.blinkTimer < 0.6;\n\n// Start game\nif (engine.input.isKeyPressed(Keys.Space)) {\n  for (var i = 0; i < engine.scenes.length; i++) {\n    if (engine.scenes[i].name === 'BattleScene') {\n      engine.goToScene(engine.scenes[i], null, 'fade', 0.5);\n      break;\n    }\n  }\n}",
+        "onDestroy": ""
+      }
+    },
+    {
+      "id": "scene_battle",
+      "name": "BattleScene",
+      "isDefault": false,
+      "camera": null,
+      "layers": [
+        {
+          "id": "layer_battle_bg",
+          "name": "background",
+          "zOrder": 0,
+          "isUI": false,
+          "gameObjects": [],
+          "elements": []
+        },
+        {
+          "id": "layer_battle_fx",
+          "name": "effects",
+          "zOrder": 1,
+          "isUI": false,
+          "gameObjects": [],
+          "elements": []
+        },
+        {
+          "id": "layer_battle_hud",
+          "name": "hud",
+          "zOrder": 10,
+          "isUI": true,
+          "gameObjects": [],
+          "elements": []
+        }
+      ],
+      "script": {
+        "onCreate": "var W = 960;\nvar H = 540;\nvar COLS = 120;\nvar ROWS = 68;\nvar CELL = 8;\n\n// Generate terrain grid\nthis.terrain = [];\nfor (var x = 0; x < COLS; x++) {\n  this.terrain[x] = [];\n  var groundY = 42 + Math.sin(x * 0.05) * 8 + Math.sin(x * 0.12) * 5 + Math.sin(x * 0.03) * 6;\n  groundY = Math.floor(groundY);\n  for (var y = 0; y < ROWS; y++) {\n    this.terrain[x][y] = (y >= groundY) ? 1 : 0;\n  }\n}\n\n// Flatten areas under tanks\nfor (var fx = 12; fx < 20; fx++) {\n  var flatY = 42;\n  for (var y = 0; y < ROWS; y++) {\n    this.terrain[fx][y] = (y >= flatY) ? 1 : 0;\n  }\n}\nfor (var fx = 100; fx < 108; fx++) {\n  var flatY = 42;\n  for (var y = 0; y < ROWS; y++) {\n    this.terrain[fx][y] = (y >= flatY) ? 1 : 0;\n  }\n}\n\n// Helper: find surface Y for grid column\nthis.findGround = function(gx) {\n  if (gx < 0 || gx >= COLS) return ROWS * CELL;\n  for (var gy = 0; gy < ROWS; gy++) {\n    if (this.terrain[gx][gy]) return gy * CELL;\n  }\n  return ROWS * CELL;\n};\n\n// Players\nthis.players = [\n  { x: 128, y: 0, hp: 100, angle: 60, power: 50, color: '#4488ff', name: 'Player 1' },\n  { x: 832, y: 0, hp: 100, angle: 120, power: 50, color: '#ff4444', name: 'CPU' }\n];\nfor (var p = 0; p < 2; p++) {\n  var gx = Math.floor(this.players[p].x / CELL);\n  this.players[p].y = this.findGround(gx) - 16;\n}\n\n// Game state\nthis.turn = 0;\nthis.state = 'aim';\nthis.wind = Math.round((Math.random() - 0.5) * 120);\nthis.proj = null;\nthis.trail = [];\nthis.explosions = [];\nthis.explodeTimer = 0;\nthis.explodeHit = false;\nthis.cpuTimer = 0;\nthis.cpuFired = false;\nthis.winner = -1;\n\n// UI\nvar uiLayer = this.layers[this.layers.length - 1].layer;\nthis.turnLabel = new UILabel('Player 1 - Aim!', new Vec2(400, 25), { fontSize: 18, color: 'white' });\nuiLayer.registerElement(this.turnLabel);\nthis.aimLabel = new UILabel('Angle: 60  Power: 50', new Vec2(380, 50), { fontSize: 14, color: '#cccccc' });\nuiLayer.registerElement(this.aimLabel);\nthis.windLabel = new UILabel('Wind: ' + this.wind, new Vec2(440, 70), { fontSize: 14, color: '#88ccff' });\nuiLayer.registerElement(this.windLabel);",
+        "onUpdate": "var ctx = engine.drawer.ctx;\nvar W = 960;\nvar H = 540;\nvar COLS = 120;\nvar ROWS = 68;\nvar CELL = 8;\nvar GRAVITY = 300;\nvar BLAST_RADIUS = 30;\nvar BLAST_DAMAGE = 35;\n\n// 1. Sky gradient\nengine.drawer.gradient(new Vec2(0, 0), new Size(W, H), new Vec2(0, 0), new Vec2(0, H), '#0a0a2e', '#1a3a5a');\n\n// 2. Draw terrain\nfor (var x = 0; x < COLS; x++) {\n  var surfaceFound = false;\n  for (var y = 0; y < ROWS; y++) {\n    if (this.terrain[x][y]) {\n      ctx.fillStyle = surfaceFound ? '#5a3a1a' : '#3a7a2a';\n      ctx.fillRect(x * CELL, y * CELL, CELL, CELL);\n      surfaceFound = true;\n    } else {\n      surfaceFound = false;\n    }\n  }\n}\n\n// 3. Settle tanks (gravity)\nfor (var p = 0; p < 2; p++) {\n  var t = this.players[p];\n  if (t.hp <= 0) continue;\n  var gx = Math.floor(t.x / CELL);\n  var groundY = this.findGround(gx) - 16;\n  if (t.y < groundY) {\n    t.y += 200 * elapsedTime;\n    if (t.y > groundY) t.y = groundY;\n  } else {\n    t.y = groundY;\n  }\n}\n\n// 4. Draw tanks\nfor (var p = 0; p < 2; p++) {\n  var t = this.players[p];\n  if (t.hp <= 0) continue;\n  // Tracks\n  engine.drawer.rectangle(new Vec2(t.x - 16, t.y + 4), new Size(32, 6), true, 0, '#333333');\n  // Body\n  engine.drawer.rectangle(new Vec2(t.x - 14, t.y - 6), new Size(28, 12), true, 0, t.color);\n  // Turret\n  engine.drawer.rectangle(new Vec2(t.x - 5, t.y - 14), new Size(10, 8), true, 0, t.color);\n  // Barrel\n  var rad = t.angle * Math.PI / 180;\n  var bx = t.x + Math.cos(rad) * 22;\n  var by = (t.y - 10) - Math.sin(rad) * 22;\n  engine.drawer.line(new Vec2(t.x, t.y - 10), new Vec2(bx, by), 3, t.color);\n}\n\n// 5. State machine\nvar current = this.players[this.turn];\nvar other = this.players[1 - this.turn];\n\nif (this.state === 'aim') {\n  if (this.turn === 0) {\n    // Human input\n    if (engine.input.isKeyDown(Keys.ArrowUp)) current.angle += 60 * elapsedTime;\n    if (engine.input.isKeyDown(Keys.ArrowDown)) current.angle -= 60 * elapsedTime;\n    if (engine.input.isKeyDown(Keys.ArrowRight)) current.power += 40 * elapsedTime;\n    if (engine.input.isKeyDown(Keys.ArrowLeft)) current.power -= 40 * elapsedTime;\n    current.angle = Math.max(5, Math.min(175, current.angle));\n    current.power = Math.max(10, Math.min(100, current.power));\n    this.aimLabel.setText('Angle: ' + Math.round(current.angle) + '  Power: ' + Math.round(current.power));\n\n    // Trajectory preview\n    var prad = current.angle * Math.PI / 180;\n    var pvx = Math.cos(prad) * current.power * 4;\n    var pvy = -Math.sin(prad) * current.power * 4;\n    var px = current.x + Math.cos(prad) * 26;\n    var py = (current.y - 10) - Math.sin(prad) * 26;\n    ctx.fillStyle = 'rgba(255,255,255,0.3)';\n    for (var s = 0; s < 20; s++) {\n      px += pvx * 0.04;\n      py += pvy * 0.04;\n      pvy += GRAVITY * 0.04;\n      pvx += this.wind * 0.04;\n      ctx.beginPath();\n      ctx.arc(px, py, 2, 0, Math.PI * 2);\n      ctx.fill();\n    }\n\n    if (engine.input.isKeyPressed(Keys.Space)) {\n      this.state = 'fire';\n      var frad = current.angle * Math.PI / 180;\n      this.proj = {\n        x: current.x + Math.cos(frad) * 26, y: (current.y - 10) - Math.sin(frad) * 26,\n        vx: Math.cos(frad) * current.power * 4,\n        vy: -Math.sin(frad) * current.power * 4\n      };\n      this.trail = [];\n      this.turnLabel.setText(this.turn === 0 ? 'Player 1 - Fire!' : 'CPU - Fire!');\n    }\n  } else {\n    // CPU AI\n    this.cpuTimer += elapsedTime;\n    this.aimLabel.setText('CPU thinking...');\n    if (this.cpuTimer >= 1.5 && !this.cpuFired) {\n      var dx = other.x - current.x;\n      var dy = other.y - current.y;\n      var dist = Math.sqrt(dx * dx + dy * dy);\n      var baseAngle = Math.atan2(-dy, dx) * 180 / Math.PI;\n      if (baseAngle < 0) baseAngle = 180 + baseAngle;\n      baseAngle += (Math.random() - 0.5) * 30;\n      baseAngle = Math.max(10, Math.min(170, baseAngle));\n      var basePower = Math.min(100, Math.max(20, dist * 0.12));\n      basePower *= (0.8 + Math.random() * 0.4);\n      current.angle = baseAngle;\n      current.power = basePower;\n\n      this.state = 'fire';\n      var crad = current.angle * Math.PI / 180;\n      this.proj = {\n        x: current.x + Math.cos(crad) * 26, y: (current.y - 10) - Math.sin(crad) * 26,\n        vx: Math.cos(crad) * current.power * 4,\n        vy: -Math.sin(crad) * current.power * 4\n      };\n      this.trail = [];\n      this.cpuFired = true;\n      this.turnLabel.setText('CPU - Fire!');\n    }\n  }\n}\n\nif (this.state === 'fire' && this.proj) {\n  this.proj.vx += this.wind * elapsedTime;\n  this.proj.vy += GRAVITY * elapsedTime;\n  this.proj.x += this.proj.vx * elapsedTime;\n  this.proj.y += this.proj.vy * elapsedTime;\n\n  this.trail.push({ x: this.proj.x, y: this.proj.y });\n  if (this.trail.length > 40) this.trail.shift();\n\n  // Draw trail\n  for (var i = 0; i < this.trail.length; i++) {\n    var a = i / this.trail.length;\n    ctx.fillStyle = 'rgba(255,200,50,' + (a * 0.6) + ')';\n    ctx.beginPath();\n    ctx.arc(this.trail[i].x, this.trail[i].y, 2, 0, Math.PI * 2);\n    ctx.fill();\n  }\n\n  // Draw projectile\n  engine.drawer.circle(new Vec2(this.proj.x, this.proj.y), 4, 0, -1, true, 0, '#ffee44');\n\n  // Out of bounds\n  if (this.proj.x < -50 || this.proj.x > W + 50 || this.proj.y > H + 50) {\n    this.state = 'switch';\n  }\n\n  // Terrain collision\n  var tgx = Math.floor(this.proj.x / CELL);\n  var tgy = Math.floor(this.proj.y / CELL);\n  if (tgx >= 0 && tgx < COLS && tgy >= 0 && tgy < ROWS && this.terrain[tgx][tgy]) {\n    this.state = 'explode';\n    this.explodeTimer = 0.8;\n    this.explodeHit = true;\n  }\n\n  // Tank collision (skip firing tank)\n  for (var p = 0; p < 2; p++) {\n    if (p === this.turn) continue;\n    var tp = this.players[p];\n    if (tp.hp <= 0) continue;\n    var tdx = this.proj.x - tp.x;\n    var tdy = this.proj.y - tp.y;\n    if (tdx * tdx + tdy * tdy < 20 * 20) {\n      this.state = 'explode';\n      this.explodeTimer = 0.8;\n      this.explodeHit = true;\n    }\n  }\n}\n\nif (this.state === 'explode') {\n  if (this.explodeHit) {\n    this.explodeHit = false;\n    var hitX = this.proj.x;\n    var hitY = this.proj.y;\n    // Destroy terrain\n    var bx = Math.floor(hitX / CELL);\n    var by = Math.floor(hitY / CELL);\n    var br = Math.ceil(BLAST_RADIUS / CELL);\n    for (var ddx = -br; ddx <= br; ddx++) {\n      for (var ddy = -br; ddy <= br; ddy++) {\n        if (ddx * ddx + ddy * ddy <= br * br) {\n          var tx = bx + ddx;\n          var ty = by + ddy;\n          if (tx >= 0 && tx < COLS && ty >= 0 && ty < ROWS) {\n            this.terrain[tx][ty] = 0;\n          }\n        }\n      }\n    }\n    // Damage tanks\n    for (var p = 0; p < 2; p++) {\n      var tp = this.players[p];\n      if (tp.hp <= 0) continue;\n      var d = Math.sqrt((tp.x - hitX) * (tp.x - hitX) + (tp.y - hitY) * (tp.y - hitY));\n      if (d < BLAST_RADIUS * 2) {\n        var dmg = Math.round(BLAST_DAMAGE * Math.max(0, 1 - d / (BLAST_RADIUS * 2)));\n        tp.hp = Math.max(0, tp.hp - dmg);\n      }\n    }\n    // Explosion particle\n    var exp = ParticleEmitter.explosion(engine, new Vec2(hitX, hitY));\n    this.explosions.push(exp);\n  }\n  this.explodeTimer -= elapsedTime;\n  if (this.explodeTimer <= 0) {\n    if (this.players[0].hp <= 0 || this.players[1].hp <= 0) {\n      this.winner = this.players[0].hp <= 0 ? 1 : 0;\n      this.state = 'gameover';\n    } else {\n      this.state = 'switch';\n    }\n  }\n}\n\nif (this.state === 'switch') {\n  this.turn = 1 - this.turn;\n  this.state = 'aim';\n  this.proj = null;\n  this.trail = [];\n  this.wind = Math.round((Math.random() - 0.5) * 120);\n  this.windLabel.setText('Wind: ' + this.wind);\n  this.turnLabel.setText(this.turn === 0 ? 'Player 1 - Aim!' : 'CPU - Aim...');\n  this.cpuTimer = 0;\n  this.cpuFired = false;\n}\n\nif (this.state === 'gameover') {\n  for (var i = 0; i < engine.scenes.length; i++) {\n    if (engine.scenes[i].name === 'GameOverScene') {\n      engine.goToScene(engine.scenes[i], { winner: this.winner }, 'fade', 0.8);\n      break;\n    }\n  }\n}\n\n// 6. Draw explosions\nfor (var e = this.explosions.length - 1; e >= 0; e--) {\n  this.explosions[e].draw(elapsedTime);\n  if (!this.explosions[e].active && this.explosions[e].particles.length === 0) {\n    this.explosions.splice(e, 1);\n  }\n}\n\n// 7. HP bars\nfor (var p = 0; p < 2; p++) {\n  var t = this.players[p];\n  var hbx = p === 0 ? 20 : W - 170;\n  engine.drawer.rectangle(new Vec2(hbx, 10), new Size(150, 16), true, 0, '#333333');\n  var hpW = Math.max(0, (t.hp / 100) * 148);\n  var hpColor = t.hp > 50 ? '#44cc44' : (t.hp > 25 ? '#cccc44' : '#cc4444');\n  engine.drawer.rectangle(new Vec2(hbx + 1, 11), new Size(hpW, 14), true, 0, hpColor);\n  engine.drawer.text(t.name + ': ' + t.hp + ' HP', new Vec2(hbx + 4, 23), 12, 'monospace', 'normal', 'white');\n}\n\n// 8. Wind indicator\nvar windX = 480;\nvar windY = 88;\nvar windLen = Math.abs(this.wind) * 0.4;\nvar windDir = this.wind > 0 ? 1 : -1;\nif (Math.abs(this.wind) > 3) {\n  engine.drawer.line(new Vec2(windX - windLen * windDir, windY), new Vec2(windX + windLen * windDir, windY), 2, '#88ccff');\n  engine.drawer.line(new Vec2(windX + windLen * windDir, windY), new Vec2(windX + (windLen - 6) * windDir, windY - 4), 2, '#88ccff');\n  engine.drawer.line(new Vec2(windX + windLen * windDir, windY), new Vec2(windX + (windLen - 6) * windDir, windY + 4), 2, '#88ccff');\n}",
+        "onDestroy": ""
+      }
+    },
+    {
+      "id": "scene_gameover",
+      "name": "GameOverScene",
+      "isDefault": false,
+      "camera": null,
+      "layers": [
+        {
+          "id": "layer_go_bg",
+          "name": "background",
+          "zOrder": 0,
+          "isUI": false,
+          "gameObjects": [],
+          "elements": []
+        },
+        {
+          "id": "layer_go_ui",
+          "name": "ui",
+          "zOrder": 10,
+          "isUI": true,
+          "gameObjects": [],
+          "elements": []
+        }
+      ],
+      "script": {
+        "onCreate": "var data = this.getIncomingData();\nvar winner = (data && data.winner !== undefined) ? data.winner : 0;\nvar winnerName = winner === 0 ? 'Player 1' : 'CPU';\nvar winnerColor = winner === 0 ? '#4488ff' : '#ff4444';\n\nvar uiLayer = this.layers[this.layers.length - 1].layer;\n\nthis.winLabel = new UILabel(winnerName + ' Wins!', new Vec2(330, 210), { fontSize: 48, color: winnerColor });\nuiLayer.registerElement(this.winLabel);\n\nthis.restartLabel = new UILabel('Press SPACE to Play Again', new Vec2(345, 290), { fontSize: 18, color: '#aaaaaa' });\nuiLayer.registerElement(this.restartLabel);\n\nthis.menuLabel = new UILabel('Press ESC for Menu', new Vec2(385, 330), { fontSize: 14, color: '#666666' });\nuiLayer.registerElement(this.menuLabel);\n\nthis.blinkTimer = 0;\n\n// Decorative terrain\nthis.goTerrain = [];\nfor (var x = 0; x < 120; x++) {\n  this.goTerrain.push(400 + Math.sin(x * 0.06) * 35 + Math.sin(x * 0.1) * 20);\n}",
+        "onUpdate": "var ctx = engine.drawer.ctx;\nvar W = 960;\nvar H = 540;\n\nengine.drawer.gradient(new Vec2(0, 0), new Size(W, H), new Vec2(0, 0), new Vec2(0, H), '#0a0a2e', '#1a2a4a');\n\n// Decorative terrain\nctx.fillStyle = '#2d5a27';\nfor (var x = 0; x < 120; x++) {\n  var ty = this.goTerrain[x];\n  ctx.fillRect(x * 8, ty, 8, H - ty);\n}\n\nthis.blinkTimer += elapsedTime;\nif (this.blinkTimer > 1.0) this.blinkTimer = 0;\nthis.restartLabel.showIt = this.blinkTimer < 0.6;\n\nif (engine.input.isKeyPressed(Keys.Space)) {\n  for (var i = 0; i < engine.scenes.length; i++) {\n    if (engine.scenes[i].name === 'BattleScene') {\n      engine.goToScene(engine.scenes[i], null, 'fade', 0.5);\n      break;\n    }\n  }\n}\n\nif (engine.input.isKeyPressed(Keys.Escape)) {\n  for (var i = 0; i < engine.scenes.length; i++) {\n    if (engine.scenes[i].name === 'MenuScene') {\n      engine.goToScene(engine.scenes[i], null, 'fade', 0.5);\n      break;\n    }\n  }\n}",
+        "onDestroy": ""
+      }
+    }
+  ],
+  "assets": {
+    "sprites": [],
+    "audio": []
+  },
+  "scripts": []
+}

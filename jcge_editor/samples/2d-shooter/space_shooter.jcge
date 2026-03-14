@@ -1,7 +1,7 @@
 {
   "version": 1,
   "name": "Space Shooter",
-  "filePath": null,
+  "filePath": "C:\\repos\\mine\\js-canvas-game-engine\\jcge_editor\\samples\\2d-shooter\\space_shooter.jcge",
   "settings": {
     "canvasWidth": 480,
     "canvasHeight": 640,
@@ -11,9 +11,93 @@
   },
   "scenes": [
     {
+      "id": "scene_menu",
+      "name": "MenuScene",
+      "isDefault": true,
+      "camera": null,
+      "layers": [
+        {
+          "id": "layer_menu_bg",
+          "name": "background",
+          "zOrder": 0,
+          "isUI": false,
+          "gameObjects": [],
+          "elements": [
+            {
+              "id": "el_menu_star1",
+              "type": "element",
+              "name": "Star1",
+              "position": { "X": 50, "Y": 100 },
+              "opacity": 0.6,
+              "showIt": true,
+              "sprite": { "type": "sprite", "width": 4, "height": 4, "path": "assets/sprites/star.png" }
+            },
+            {
+              "id": "el_menu_star2",
+              "type": "element",
+              "name": "Star2",
+              "position": { "X": 200, "Y": 50 },
+              "opacity": 0.4,
+              "showIt": true,
+              "sprite": { "type": "sprite", "width": 4, "height": 4, "path": "assets/sprites/star.png" }
+            },
+            {
+              "id": "el_menu_star3",
+              "type": "element",
+              "name": "Star3",
+              "position": { "X": 350, "Y": 200 },
+              "opacity": 0.8,
+              "showIt": true,
+              "sprite": { "type": "sprite", "width": 4, "height": 4, "path": "assets/sprites/star.png" }
+            },
+            {
+              "id": "el_menu_star4",
+              "type": "element",
+              "name": "Star4",
+              "position": { "X": 120, "Y": 350 },
+              "opacity": 0.5,
+              "showIt": true,
+              "sprite": { "type": "sprite", "width": 4, "height": 4, "path": "assets/sprites/star.png" }
+            },
+            {
+              "id": "el_menu_star5",
+              "type": "element",
+              "name": "Star5",
+              "position": { "X": 400, "Y": 450 },
+              "opacity": 0.7,
+              "showIt": true,
+              "sprite": { "type": "sprite", "width": 4, "height": 4, "path": "assets/sprites/star.png" }
+            },
+            {
+              "id": "el_menu_star6",
+              "type": "element",
+              "name": "Star6",
+              "position": { "X": 280, "Y": 520 },
+              "opacity": 0.3,
+              "showIt": true,
+              "sprite": { "type": "sprite", "width": 4, "height": 4, "path": "assets/sprites/star.png" }
+            }
+          ]
+        },
+        {
+          "id": "layer_menu_ui",
+          "name": "ui",
+          "zOrder": 10,
+          "isUI": true,
+          "gameObjects": [],
+          "elements": []
+        }
+      ],
+      "script": {
+        "onCreate": "var uiLayer = this.layers[this.layers.length - 1].layer;\n\nvar titleLabel = new UILabel('SPACE SHOOTER', new Vec2(85, 250), { fontSize: 36, color: 'white' });\nuiLayer.registerElement(titleLabel);\n\nvar startLabel = new UILabel('Press SPACE to Start', new Vec2(140, 310), { fontSize: 16, color: '#aaaaaa' });\nuiLayer.registerElement(startLabel);",
+        "onUpdate": "var W = 480;\nvar H = 640;\n\nvar stars = ['Star1', 'Star2', 'Star3', 'Star4', 'Star5', 'Star6'];\nfor (var i = 0; i < stars.length; i++) {\n  var s = this.findByName(stars[i]);\n  if (!s) continue;\n  s.position.Y += (20 + i * 8) * elapsedTime;\n  if (s.position.Y > H) s.position.Y = -4;\n}\n\nif (engine.input.isKeyPressed(Keys.Space)) {\n  for (var i = 0; i < engine.scenes.length; i++) {\n    if (engine.scenes[i].name === 'GameScene') {\n      engine.goToScene(engine.scenes[i], null, 'fade', 0.5);\n      break;\n    }\n  }\n}",
+        "onDestroy": ""
+      }
+    },
+    {
       "id": "scene_main",
       "name": "GameScene",
-      "isDefault": true,
+      "isDefault": false,
       "camera": null,
       "layers": [
         {
@@ -133,7 +217,7 @@
               "id": "go_enemy5",
               "type": "gameobject",
               "name": "Enemy5",
-              "position": { "X": 260, "Y": 120 },
+              "position": { "X": 263, "Y": 136 },
               "velocity": { "X": 0, "Y": 0 },
               "opacity": 1,
               "showIt": true,
@@ -180,17 +264,7 @@
           "zOrder": 3,
           "isUI": false,
           "gameObjects": [],
-          "elements": [
-            {
-              "id": "el_explosion1",
-              "type": "element",
-              "name": "Explosion",
-              "position": { "X": 300, "Y": 180 },
-              "opacity": 0.9,
-              "showIt": true,
-              "sprite": { "type": "sprite", "width": 24, "height": 24, "path": "assets/sprites/explosion.png" }
-            }
-          ]
+          "elements": []
         },
         {
           "id": "layer_ui",
@@ -200,7 +274,96 @@
           "gameObjects": [],
           "elements": []
         }
-      ]
+      ],
+      "script": {
+        "onUpdate": "var player = this.findByName('Player');\nvar bullet = this.findByName('Bullet');\nvar W = 480;\nvar H = 640;\nvar speed = 250;\n\n// Draw and cleanup explosions\nfor (var i = this.explosions.length - 1; i >= 0; i--) {\n  this.explosions[i].draw(elapsedTime);\n  if (!this.explosions[i].active && this.explosions[i].particles.length === 0)\n    this.explosions.splice(i, 1);\n}\n\n// Scroll stars for parallax (always runs)\nvar stars = ['Star1', 'Star2', 'Star3', 'Star4', 'Star5', 'Star6'];\nfor (var i = 0; i < stars.length; i++) {\n  var s = this.findByName(stars[i]);\n  if (!s) continue;\n  s.position.Y += (20 + i * 8) * elapsedTime;\n  if (s.position.Y > H) s.position.Y = -4;\n}\n\n// Game over state - wait then switch to GameOverScene\nif (this.gameOver) {\n  this.deathTimer -= elapsedTime;\n  if (this.deathTimer <= 0) {\n    for (var si = 0; si < engine.scenes.length; si++) {\n      if (engine.scenes[si].name === 'GameOverScene') {\n        engine.goToScene(engine.scenes[si], { score: this.score }, 'fade', 0.5);\n        break;\n      }\n    }\n    return true;\n  }\n  // Move enemies down still for visual effect\n  var enemies = ['Enemy1', 'Enemy2', 'Enemy3', 'Enemy4', 'Enemy5'];\n  for (var i = 0; i < enemies.length; i++) {\n    var e = this.findByName(enemies[i]);\n    if (!e || !e.showIt) continue;\n    e.position.Y += (60 + i * 15) * elapsedTime;\n    if (e.position.Y > H + 32) {\n      e.position.X = Math.random() * (W - 32);\n      e.position.Y = -40 - Math.random() * 100;\n    }\n    this.enemyFires[i].position = new Vec2(e.position.X + 16, e.position.Y);\n    this.enemyFires[i].draw(elapsedTime);\n  }\n  return true;\n}\n\n// Player movement\nif (engine.input.isKeyDown(Keys.ArrowLeft)) player.position.X -= speed * elapsedTime;\nif (engine.input.isKeyDown(Keys.ArrowRight)) player.position.X += speed * elapsedTime;\nif (engine.input.isKeyDown(Keys.ArrowUp)) player.position.Y -= speed * elapsedTime;\nif (engine.input.isKeyDown(Keys.ArrowDown)) player.position.Y += speed * elapsedTime;\n\n// Clamp player to screen\nplayer.position.X = Math.max(0, Math.min(W - 32, player.position.X));\nplayer.position.Y = Math.max(0, Math.min(H - 32, player.position.Y));\n\n// Player thruster\nthis.playerFire.position = new Vec2(player.position.X + 16, player.position.Y + 30);\nthis.playerFire.draw(elapsedTime);\n\n// Fire bullet with Space\nif (engine.input.isKeyPressed(Keys.Space) && !bullet.showIt) {\n  bullet.position.X = player.position.X + 12;\n  bullet.position.Y = player.position.Y - 16;\n  bullet.showIt = true;\n}\n\n// Move bullet upward\nif (bullet.showIt) {\n  bullet.position.Y -= 400 * elapsedTime;\n  if (bullet.position.Y < -20) bullet.showIt = false;\n}\n\n// Move enemies downward and check collisions\nvar enemies = ['Enemy1', 'Enemy2', 'Enemy3', 'Enemy4', 'Enemy5'];\nfor (var i = 0; i < enemies.length; i++) {\n  var e = this.findByName(enemies[i]);\n  if (!e || !e.showIt) continue;\n  e.position.Y += (60 + i * 15) * elapsedTime;\n  // Wrap around when off bottom\n  if (e.position.Y > H + 32) {\n    e.position.X = Math.random() * (W - 32);\n    e.position.Y = -40 - Math.random() * 100;\n  }\n  // Enemy thruster\n  this.enemyFires[i].position = new Vec2(e.position.X + 16, e.position.Y);\n  this.enemyFires[i].draw(elapsedTime);\n  // Bullet hits enemy\n  if (bullet.showIt && e.collisionWith(bullet)) {\n    var exp = ParticleEmitter.explosion(engine, new Vec2(e.position.X + 16, e.position.Y + 16));\n    this.explosions.push(exp);\n    this.score += 100;\n    this.scoreLabel.setText('Score: ' + this.score);\n    e.position.Y = -40 - Math.random() * 200;\n    e.position.X = Math.random() * (W - 32);\n    bullet.showIt = false;\n  }\n  // Enemy hits player\n  if (player.showIt && e.collisionWith(player)) {\n    var exp = ParticleEmitter.explosion(engine, new Vec2(player.position.X + 16, player.position.Y + 16));\n    this.explosions.push(exp);\n    player.showIt = false;\n    this.playerFire.stop();\n    this.gameOver = true;\n    this.deathTimer = 1.5;\n    this.scoreLabel.setText('Final Score: ' + this.score);\n  }\n}",
+        "onCreate": "// Game state\nthis.gameOver = false;\nthis.deathTimer = 0;\nthis.score = 0;\nthis.explosions = [];\n\n// Hide bullet at start\nvar bullet = this.findByName('Bullet');\nif (bullet) bullet.showIt = false;\n\n// Player thruster (blue flame)\nthis.playerFire = new ParticleEmitter(engine, {\n  position: new Vec2(240, 580),\n  minSpeed: 30, maxSpeed: 80,\n  minAngle: Math.PI * 0.25, maxAngle: Math.PI * 0.75,\n  minLife: 0.2, maxLife: 0.5,\n  minSize: 2, maxSize: 5,\n  startColor: new RGB(100, 180, 255),\n  endColor: new RGB(50, 100, 255, 0),\n  gravity: new Vec2(0, 20),\n  rate: 5, shape: 'circle'\n});\n\n// Enemy thrusters (orange/red flame)\nthis.enemyFires = [];\nfor (var i = 0; i < 5; i++) {\n  this.enemyFires.push(new ParticleEmitter(engine, {\n    position: new Vec2(0, 0),\n    minSpeed: 20, maxSpeed: 60,\n    minAngle: Math.PI * 0.3, maxAngle: Math.PI * 0.7,\n    minLife: 0.15, maxLife: 0.4,\n    minSize: 2, maxSize: 4,\n    startColor: new RGB(255, 150, 30),\n    endColor: new RGB(255, 50, 0, 0),\n    gravity: new Vec2(0, 15),\n    rate: 3, shape: 'circle'\n  }));\n}\n\n// UI - Score\nvar uiLayer = this.layers[this.layers.length - 1].layer;\nthis.scoreLabel = new UILabel('Score: 0', new Vec2(10, 25), { fontSize: 16, color: 'white' });\nuiLayer.registerElement(this.scoreLabel);",
+        "onDestroy": ""
+      }
+    },
+    {
+      "id": "scene_gameover",
+      "name": "GameOverScene",
+      "isDefault": false,
+      "camera": null,
+      "layers": [
+        {
+          "id": "layer_go_bg",
+          "name": "background",
+          "zOrder": 0,
+          "isUI": false,
+          "gameObjects": [],
+          "elements": [
+            {
+              "id": "el_go_star1",
+              "type": "element",
+              "name": "Star1",
+              "position": { "X": 50, "Y": 100 },
+              "opacity": 0.6,
+              "showIt": true,
+              "sprite": { "type": "sprite", "width": 4, "height": 4, "path": "assets/sprites/star.png" }
+            },
+            {
+              "id": "el_go_star2",
+              "type": "element",
+              "name": "Star2",
+              "position": { "X": 200, "Y": 50 },
+              "opacity": 0.4,
+              "showIt": true,
+              "sprite": { "type": "sprite", "width": 4, "height": 4, "path": "assets/sprites/star.png" }
+            },
+            {
+              "id": "el_go_star3",
+              "type": "element",
+              "name": "Star3",
+              "position": { "X": 350, "Y": 200 },
+              "opacity": 0.8,
+              "showIt": true,
+              "sprite": { "type": "sprite", "width": 4, "height": 4, "path": "assets/sprites/star.png" }
+            },
+            {
+              "id": "el_go_star4",
+              "type": "element",
+              "name": "Star4",
+              "position": { "X": 120, "Y": 350 },
+              "opacity": 0.5,
+              "showIt": true,
+              "sprite": { "type": "sprite", "width": 4, "height": 4, "path": "assets/sprites/star.png" }
+            },
+            {
+              "id": "el_go_star5",
+              "type": "element",
+              "name": "Star5",
+              "position": { "X": 400, "Y": 450 },
+              "opacity": 0.7,
+              "showIt": true,
+              "sprite": { "type": "sprite", "width": 4, "height": 4, "path": "assets/sprites/star.png" }
+            },
+            {
+              "id": "el_go_star6",
+              "type": "element",
+              "name": "Star6",
+              "position": { "X": 280, "Y": 520 },
+              "opacity": 0.3,
+              "showIt": true,
+              "sprite": { "type": "sprite", "width": 4, "height": 4, "path": "assets/sprites/star.png" }
+            }
+          ]
+        },
+        {
+          "id": "layer_go_ui",
+          "name": "ui",
+          "zOrder": 10,
+          "isUI": true,
+          "gameObjects": [],
+          "elements": []
+        }
+      ],
+      "script": {
+        "onCreate": "var data = this.getIncomingData();\nthis.finalScore = (data && data.score) ? data.score : 0;\n\nvar uiLayer = this.layers[this.layers.length - 1].layer;\n\nvar goLabel = new UILabel('GAME OVER', new Vec2(110, 250), { fontSize: 40, color: '#ff4444' });\nuiLayer.registerElement(goLabel);\n\nvar scoreLabel = new UILabel('Score: ' + this.finalScore, new Vec2(170, 300), { fontSize: 24, color: 'white' });\nuiLayer.registerElement(scoreLabel);\n\nvar restartLabel = new UILabel('Press SPACE to Play Again', new Vec2(110, 370), { fontSize: 14, color: '#aaaaaa' });\nuiLayer.registerElement(restartLabel);",
+        "onUpdate": "var W = 480;\nvar H = 640;\n\nvar stars = ['Star1', 'Star2', 'Star3', 'Star4', 'Star5', 'Star6'];\nfor (var i = 0; i < stars.length; i++) {\n  var s = this.findByName(stars[i]);\n  if (!s) continue;\n  s.position.Y += (20 + i * 8) * elapsedTime;\n  if (s.position.Y > H) s.position.Y = -4;\n}\n\nif (engine.input.isKeyPressed(Keys.Space)) {\n  for (var i = 0; i < engine.scenes.length; i++) {\n    if (engine.scenes[i].name === 'GameScene') {\n      engine.goToScene(engine.scenes[i], null, 'fade', 0.5);\n      break;\n    }\n  }\n}",
+        "onDestroy": ""
+      }
     }
   ],
   "assets": {
@@ -213,5 +376,8 @@
       { "key": "explosion", "filename": "explosion.png" }
     ],
     "audio": []
-  }
+  },
+  "scripts": [
+    { "key": "file_js", "filename": "file_js.js" }
+  ]
 }

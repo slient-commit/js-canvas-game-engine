@@ -485,7 +485,3 @@ window.addEventListener("gameReady", function() {
     engine.start();
 });
 ```
-
-## License
-
-Educational purposes. Free to use and modify.

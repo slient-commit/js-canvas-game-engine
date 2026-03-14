@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { useProject, useProjectDispatch } from '../store/ProjectContext';
 
 export default function AssetManager() {
   const state = useProject();
   const dispatch = useProjectDispatch();
+  const [playingKey, setPlayingKey] = useState(null);
+  const audioRef = useRef(null);
 
   if (!state.project) {
     return (
@@ -33,13 +35,15 @@ export default function AssetManager() {
         const ext = filename.split('.').pop().toLowerCase();
         const key = filename.replace(/\.[^.]+$/, '');
 
-        // Determine project assets directory
         const projectDir = state.project.filePath
           ? state.project.filePath.replace(/[/\\][^/\\]+$/, '')
           : null;
 
         if (!projectDir) {
-          alert('Please save the project first before importing assets.');
+          await window.electronAPI.showMessageBox({
+            type: 'warning', title: 'Save First',
+            message: 'Please save the project first before importing assets.'
+          });
           return;
         }
 
@@ -48,7 +52,6 @@ export default function AssetManager() {
         const assetsSubDir = isAudio ? 'assets/audio' : 'assets/sprites';
         const destDir = projectDir + '/' + assetsSubDir;
 
-        // Ensure directory exists
         await window.electronAPI.mkdir(destDir);
         await window.electronAPI.importAsset(filePath, destDir);
 
@@ -60,6 +63,39 @@ export default function AssetManager() {
       }
     } catch (err) {
       console.error('Import failed:', err);
+    }
+  };
+
+  const handlePlayAudio = async (asset) => {
+    // Stop current audio if playing
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+
+    if (playingKey === asset.key) {
+      setPlayingKey(null);
+      return;
+    }
+
+    try {
+      const projectDir = state.project.filePath.replace(/[/\\][^/\\]+$/, '');
+      const audioPath = await window.electronAPI.pathJoin(projectDir, 'assets', 'audio', asset.filename);
+      const base64 = await window.electronAPI.readFileBase64(audioPath);
+      const ext = asset.filename.split('.').pop().toLowerCase();
+      const mime = ext === 'mp3' ? 'audio/mpeg' : ext === 'ogg' ? 'audio/ogg' : 'audio/wav';
+      const audio = new Audio('data:' + mime + ';base64,' + base64);
+      audio.volume = 0.8;
+      audio.onended = () => {
+        setPlayingKey(null);
+        audioRef.current = null;
+      };
+      audio.play();
+      audioRef.current = audio;
+      setPlayingKey(asset.key);
+    } catch (err) {
+      console.error('Audio play failed:', err);
+      setPlayingKey(null);
     }
   };
 
@@ -84,9 +120,20 @@ export default function AssetManager() {
           </div>
         ))}
         {allAudio.map(asset => (
-          <div key={asset.key} className="asset-card" title={asset.filename}>
-            <div style={{ width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: 20 }}>
-              {'\u266B'}
+          <div
+            key={asset.key}
+            className={'asset-card' + (playingKey === asset.key ? ' audio-playing' : '')}
+            title={asset.filename}
+            onClick={() => handlePlayAudio(asset)}
+            style={{ cursor: 'pointer' }}
+          >
+            <div style={{
+              width: 48, height: 48,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: playingKey === asset.key ? 'var(--accent)' : 'var(--text-muted)',
+              fontSize: 20
+            }}>
+              {playingKey === asset.key ? '\u25A0' : '\u25B6'} {'\u266B'}
             </div>
             <div className="asset-name">{asset.filename}</div>
           </div>

@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JCGE Editor - Documentation</title>
+  <style>
+    :root {
+      --bg: #0f0f1a;
+      --bg2: #181828;
+      --bg3: #222238;
+      --border: #2e2e4a;
+      --text: #cdd6f4;
+      --text2: #a6adc8;
+      --muted: #6c7086;
+      --accent: #89b4fa;
+      --accent2: #74c7ec;
+      --green: #a6e3a1;
+      --yellow: #f9e2af;
+      --red: #f38ba8;
+      --pink: #f5c2e7;
+      --peach: #fab387;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0;
+      width: 280px;
+      height: 100vh;
+      background: var(--bg2);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      z-index: 100;
+      padding: 20px 0;
+    }
+    .sidebar-logo {
+      padding: 0 20px 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 12px;
+    }
+    .sidebar-logo h1 {
+      font-size: 20px;
+      color: var(--accent);
+      letter-spacing: 1px;
+    }
+    .sidebar-logo span {
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .sidebar nav a {
+      display: block;
+      padding: 6px 24px;
+      color: var(--text2);
+      text-decoration: none;
+      font-size: 13px;
+      transition: all 0.15s;
+    }
+    .sidebar nav a:hover {
+      color: var(--accent);
+      background: var(--bg3);
+    }
+    .sidebar nav a.section-link {
+      font-weight: 600;
+      color: var(--text);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+    .sidebar nav a.sub {
+      padding-left: 40px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .sidebar nav a.sub:hover { color: var(--accent); }
+
+    /* ── Main ── */
+    .main {
+      margin-left: 280px;
+      padding: 40px 60px 80px;
+      max-width: 960px;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      padding: 40px 0 60px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 50px;
+    }
+    .hero h1 {
+      font-size: 42px;
+      color: var(--accent);
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+    }
+    .hero p {
+      font-size: 18px;
+      color: var(--text2);
+      max-width: 600px;
+    }
+    .hero-badges {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      color: var(--text2);
+    }
+    .badge-accent { border-color: var(--accent); color: var(--accent); }
+    .badge-green { border-color: var(--green); color: var(--green); }
+
+    /* ── Sections ── */
+    h2 {
+      font-size: 28px;
+      color: var(--accent);
+      margin: 60px 0 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--border);
+    }
+    h3 {
+      font-size: 20px;
+      color: var(--text);
+      margin: 35px 0 12px;
+    }
+    h4 {
+      font-size: 16px;
+      color: var(--accent2);
+      margin: 24px 0 8px;
+    }
+    p { margin: 8px 0; color: var(--text2); }
+    ul, ol { margin: 8px 0 8px 24px; color: var(--text2); }
+    li { margin: 4px 0; }
+    strong { color: var(--text); }
+
+    /* ── Code ── */
+    code {
+      font-family: 'Consolas', 'Courier New', monospace;
+      background: var(--bg3);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+      color: var(--peach);
+    }
+    pre {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      overflow-x: auto;
+      margin: 12px 0;
+      line-height: 1.5;
+    }
+    pre code {
+      background: none;
+      padding: 0;
+      font-size: 13px;
+      color: var(--text);
+    }
+    .kw { color: var(--pink); }
+    .fn { color: var(--accent); }
+    .str { color: var(--green); }
+    .num { color: var(--peach); }
+    .cm { color: var(--muted); font-style: italic; }
+    .ty { color: var(--yellow); }
+
+    /* ── Tables ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+      font-size: 13px;
+    }
+    th {
+      text-align: left;
+      padding: 10px 14px;
+      background: var(--bg3);
+      color: var(--accent);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid var(--border);
+    }
+    td {
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text2);
+    }
+    td code { font-size: 12px; }
+    tr:hover td { background: rgba(137, 180, 250, 0.03); }
+
+    /* ── Callouts ── */
+    .callout {
+      border-left: 3px solid var(--accent);
+      background: rgba(137, 180, 250, 0.06);
+      padding: 14px 18px;
+      border-radius: 0 6px 6px 0;
+      margin: 16px 0;
+    }
+    .callout-tip { border-color: var(--green); background: rgba(166, 227, 161, 0.06); }
+    .callout-warn { border-color: var(--yellow); background: rgba(249, 226, 175, 0.06); }
+    .callout-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+    .callout-label.tip { color: var(--green); }
+    .callout-label.warn { color: var(--yellow); }
+    .callout-label.info { color: var(--accent); }
+
+    /* ── Method cards ── */
+    .method {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin: 10px 0;
+    }
+    .method-sig {
+      font-family: 'Consolas', monospace;
+      font-size: 13px;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+    .method-desc {
+      font-size: 13px;
+      color: var(--text2);
+    }
+
+    /* ── Layout diagram ── */
+    .layout-diagram {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      font-family: 'Consolas', monospace;
+      font-size: 12px;
+      line-height: 1.4;
+      color: var(--text2);
+      overflow-x: auto;
+      margin: 16px 0;
+    }
+    .layout-diagram .hl { color: var(--accent); }
+    .layout-diagram .hl2 { color: var(--green); }
+    .layout-diagram .hl3 { color: var(--yellow); }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; padding: 24px 20px 60px; }
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════ SIDEBAR ═══════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <h1>JCGE Editor</h1>
+    <span>JS Canvas Game Engine &mdash; Documentation</span>
+  </div>
+  <nav>
+    <a href="#getting-started" class="section-link">Getting Started</a>
+    <a href="#new-project" class="sub">New Project</a>
+    <a href="#open-save" class="sub">Open &amp; Save</a>
+    <a href="#project-structure" class="sub">Project Structure</a>
+
+    <a href="#editor-ui" class="section-link">Editor Interface</a>
+    <a href="#toolbar" class="sub">Toolbar</a>
+    <a href="#scene-hierarchy" class="sub">Scene Hierarchy</a>
+    <a href="#center-panel" class="sub">Preview / Code / Files</a>
+    <a href="#properties-panel" class="sub">Properties Panel</a>
+    <a href="#asset-manager" class="sub">Asset Manager</a>
+
+    <a href="#scenes" class="section-link">Scenes</a>
+    <a href="#scene-scripts" class="sub">Scene Scripts</a>
+    <a href="#scene-transitions" class="sub">Scene Transitions</a>
+
+    <a href="#layers" class="section-link">Layers</a>
+
+    <a href="#gameobjects" class="section-link">Game Objects</a>
+
+    <a href="#elements" class="section-link">Elements</a>
+    <a href="#uilabel" class="sub">UILabel</a>
+    <a href="#uibutton" class="sub">UIButton</a>
+    <a href="#uipanel" class="sub">UIPanel</a>
+
+    <a href="#cameras" class="section-link">Cameras</a>
+    <a href="#fixed-camera" class="sub">Fixed Camera</a>
+    <a href="#world-camera" class="sub">World Camera</a>
+
+    <a href="#engine-api" class="section-link">Engine API</a>
+    <a href="#api-engine" class="sub">Engine</a>
+    <a href="#api-scene" class="sub">Scene</a>
+    <a href="#api-gameobject" class="sub">GameObject</a>
+    <a href="#api-element" class="sub">Element</a>
+    <a href="#api-sprite" class="sub">Sprite &amp; SpriteSheet</a>
+    <a href="#api-vec2" class="sub">Vec2</a>
+    <a href="#api-collision" class="sub">Collision</a>
+    <a href="#api-input" class="sub">Input &amp; Keys</a>
+    <a href="#api-sound" class="sub">Sound &amp; SoundManager</a>
+    <a href="#api-drawer" class="sub">Drawer</a>
+    <a href="#api-particles" class="sub">ParticleEmitter</a>
+    <a href="#api-tween" class="sub">TweenManager</a>
+
+    <a href="#export" class="section-link">Exporting</a>
+
+    <a href="#snippets" class="section-link">Code Snippets</a>
+
+    <a href="#keys-ref" class="section-link">Key Reference</a>
+  </nav>
+</aside>
+
+<!-- ═══════════════ MAIN CONTENT ═══════════════ -->
+<div class="main">
+
+<!-- ── Hero ── -->
+<div class="hero" id="top">
+  <h1>JCGE Editor</h1>
+  <p>A visual game editor for the JS Canvas Game Engine. Build 2D games with scenes, layers, sprites, physics, UI, audio, and export standalone HTML5 games.</p>
+  <div class="hero-badges">
+    <span class="badge badge-accent">Electron + React</span>
+    <span class="badge badge-green">HTML5 Canvas</span>
+    <span class="badge">JavaScript</span>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ -->
+<h2 id="getting-started">Getting Started</h2>
+
+<h3 id="new-project">Creating a New Project</h3>
+<ol>
+  <li>Click <strong>New</strong> in the toolbar</li>
+  <li>Enter a project name, canvas width, and canvas height</li>
+  <li>Choose a folder for the project</li>
+  <li>The editor creates the project folder with the engine, asset directories, and a <code>.jcge</code> project file</li>
+</ol>
+
+<h3 id="open-save">Open &amp; Save</h3>
+<ul>
+  <li><strong>Open</strong> &mdash; Opens a <code>.jcge</code> project file</li>
+  <li><strong>Save</strong> &mdash; Saves the current project. First save prompts for a location; subsequent saves overwrite</li>
+</ul>
+
+<div class="callout callout-tip">
+  <div class="callout-label tip">Tip</div>
+  The editor shows "Unsaved changes" in the toolbar when there are pending changes.
+</div>
+
+<h3 id="project-structure">Project Structure</h3>
+<div class="layout-diagram">
+<span class="hl">MyGame/</span>
+├── <span class="hl2">MyGame.jcge</span>          <span class="cm"># Project file (JSON)</span>
+├── <span class="hl">engine/</span>              <span class="cm"># Engine source (auto-copied)</span>
+│   ├── engine-core.js
+│   └── game-loader.js
+├── <span class="hl">assets/</span>
+│   ├── <span class="hl3">sprites/</span>         <span class="cm"># Imported images (PNG, JPG, etc.)</span>
+│   └── <span class="hl3">audio/</span>           <span class="cm"># Imported audio (MP3, WAV, OGG)</span>
+└── <span class="hl">scripts/</span>             <span class="cm"># Custom JS script files</span>
+</div>
+
+<!-- ══════════════════════════════════════════════ -->
+<h2 id="editor-ui">Editor Interface</h2>
+
+<div class="layout-diagram">
+┌──────────────────────────────────────────────────────┐
+│ <span class="hl">Toolbar</span>:  New  Open  Save  │  Play Pause Step Reset  │  Export  │
+├────────────┬─────────────────────────┬───────────────┤
+│            │ <span class="hl2">[Preview]</span> [Code] [Files] │               │
+│  <span class="hl3">Scene</span>     │                         │  <span class="hl3">Properties</span>  │
+│  <span class="hl3">Hierarchy</span> │    Center Panel          │  <span class="hl3">Panel</span>       │
+│            │    (canvas / code)      │               │
+│  220px     │    flexible             │  280px        │
+├────────────┴─────────────────────────┴───────────────┤
+│ <span class="hl">Asset Manager</span>                                        │
+│ 220px height                                         │
+└──────────────────────────────────────────────────────┘
+</div>
+
+<h3 id="toolbar">Toolbar</h3>
+<table>
+  <tr><th>Button</th><th>Description</th></tr>
+  <tr><td><strong>New</strong></td><td>Create a new project</td></tr>
+  <tr><td><strong>Open</strong></td><td>Open an existing <code>.jcge</code> project</td></tr>
+  <tr><td><strong>Save</strong></td><td>Save the current project</td></tr>
+  <tr><td><strong>Play</strong></td><td>Start game simulation in the preview</td></tr>
+  <tr><td><strong>Pause</strong></td><td>Freeze the simulation (rendering continues)</td></tr>
+  <tr><td><strong>Step</strong></td><td>Advance a single frame while paused</td></tr>
+  <tr><td><strong>Reset</strong></td><td>Reset the scene to its initial state</td></tr>
+  <tr><td><strong>Export</strong></td><td>Export as a standalone HTML5 game</td></tr>
+</table>
+
+<h3 id="scene-hierarchy">Scene Hierarchy (Left Panel)</h3>
+<p>A tree view of all scenes, layers, and objects:</p>
+<ul>
+  <li><strong>Scenes</strong> &mdash; click to select, shows <em>default</em> badge on the default scene</li>
+  <li><strong>Layers</strong> &mdash; nested under scenes, shows <em>(UI)</em> badge for UI layers</li>
+  <li><strong>Game Objects</strong> &mdash; listed under their layer</li>
+  <li><strong>Elements</strong> &mdash; listed under their layer</li>
+</ul>
+<p>Use the <strong>+ Add Scene</strong>, <strong>+ Layer</strong>, <strong>+ UI Layer</strong>, and <strong>+ Add Object</strong> buttons to create new items.</p>
+
+<h3 id="center-panel">Center Panel (Preview / Code / Files)</h3>
+<p>The center panel has three tabs:</p>
+<ul>
+  <li><strong>Preview</strong> &mdash; Live game canvas with pixel rulers</li>
+  <li><strong>Code</strong> &mdash; Full-size scene script editor with helpers and snippets</li>
+  <li><strong>Files</strong> &mdash; External script file editor for shared JavaScript files</li>
+</ul>
+<p>The Code tab auto-activates when a script error occurs, showing the error message.</p>
+
+<h3 id="properties-panel">Properties Panel (Right Panel)</h3>
+<p>Context-sensitive inspector that changes based on selection:</p>
+<ul>
+  <li><strong>Scene selected</strong> &mdash; name, default checkbox, camera settings</li>
+  <li><strong>Layer selected</strong> &mdash; name, z-order, UI layer toggle, delete button</li>
+  <li><strong>Object selected</strong> &mdash; name, position, velocity, opacity, visibility, sprite, delete button</li>
+</ul>
+
+<h3 id="asset-manager">Asset Manager (Bottom Panel)</h3>
+<p>Manages sprite and audio assets for the project.</p>
+<ul>
+  <li><strong>Import</strong> button to add images (<code>.png .jpg .gif .bmp .webp</code>) and audio (<code>.mp3 .wav .ogg</code>)</li>
+  <li>Sprite thumbnails displayed in a grid</li>
+  <li>Audio files can be previewed with click-to-play</li>
+</ul>
+
+<!-- ══════════════════════════════════════════════ -->
+<h2 id="scenes">Scenes</h2>
+<p>Scenes are the top-level containers for game content. Each scene has its own layers, camera, and script hooks. Only one scene is active at a time.</p>
+
+<table>
+  <tr><th>Property</th><th>Description</th></tr>
+  <tr><td><code>name</code></td><td>Display name of the scene</td></tr>
+  <tr><td><code>isDefault</code></td><td>If true, this scene loads first when the game starts</td></tr>
+  <tr><td><code>camera</code></td><td>Optional camera (fixed or world)</td></tr>
+  <tr><td><code>layers</code></td><td>Array of layers containing game objects and elements</td></tr>
+  <tr><td><code>script</code></td><td>Three hooks: <code>onCreate</code>, <code>onUpdate</code>, <code>onDestroy</code></td></tr>
+</table>
+
+<h3 id="scene-scripts">Scene Scripts</h3>
+<p>Each scene has three script hooks you can edit in the Code tab:</p>
+
+<table>
+  <tr><th>Hook</th><th>When it runs</th><th>Available variables</th></tr>
+  <tr><td><code>onCreate</code></td><td>Once, when the scene starts</td><td><code>engine</code>, <code>this</code></td></tr>
+  <tr><td><code>onUpdate</code></td><td>Every frame</td><td><code>engine</code>, <code>this</code>, <code>elapsedTime</code></td></tr>
+  <tr><td><code>onDestroy</code></td><td>Once, when the scene ends</td><td><code>engine</code>, <code>this</code></td></tr>
+</table>
+
+<p>Inside scripts you can use:</p>
+<pre><code><span class="cm">// Find objects by name</span>
+<span class="kw">var</span> player = <span class="kw">this</span>.findByName(<span class="str">'Player'</span>);
+
+<span class="cm">// Read input</span>
+<span class="kw">if</span> (engine.input.isKeyDown(Keys.ArrowRight)) {
+  player.position.X += <span class="num">200</span> * elapsedTime;
+}
+
+<span class="cm">// Switch scenes</span>
+engine.goToScene(engine.scenes[<span class="num">1</span>], { score: <span class="num">100</span> }, <span class="str">'fade'</span>, <span class="num">0.5</span>);</code></pre>
+
+<h3 id="scene-transitions">Scene Transitions</h3>
+<p>Use <code>engine.goToScene(scene, data, transition, duration)</code> to switch scenes.</p>
+<table>
+  <tr><th>Transition</th><th>Effect</th></tr>
+  <tr><td><code>'none'</code></td><td>Instant switch</td></tr>
+  <tr><td><code>'fade'</code></td><td>Fade to black, then fade in</td></tr>
+  <tr><td><code>'slide-left'</code></td><td>Slide left transition</td></tr>
+  <tr><td><code>'slide-right'</code></td><td>Slide right transition</td></tr>
+</table>
+<p>The <code>data</code> parameter can be retrieved in the new scene with <code>this.getIncomingData()</code>.</p>
+
+<!-- ══════════════════════════════════════════════ -->
+<h2 id="layers">Layers</h2>
+<p>Layers control rendering order and grouping. Objects in higher z-order layers render on top.</p>
+
+<table>
+  <tr><th>Type</th><th>Description</th></tr>
+  <tr><td><strong>Layer</strong></td><td>Standard layer, affected by camera position. Use for game world content.</td></tr>
+  <tr><td><strong>UILayer</strong></td><td>Screen-space layer, ignores camera. Use for HUD, menus, and overlays.</td></tr>
+</table>
+
+<p>Every scene starts with a default <code>ground</code> layer. Add more layers via the hierarchy panel.</p>
+
+<!-- ══════════════════════════════════════════════ -->
+<h2 id="gameobjects">Game Objects</h2>
+<p>GameObjects are the primary interactive entities in a scene. They support sprites, movement, and collision detection.</p>
+
+<table>
+  <tr><th>Property</th><th>Type</th><th>Description</th></tr>
+  <tr><td><code>name</code></td><td>String</td><td>Identifier for <code>findByName()</code></td></tr>
+  <tr><td><code>position</code></td><td>Vec2</td><td>World position (X, Y)</td></tr>
+  <tr><td><code>velocity</code></td><td>Vec2</td><td>Movement per second (applied automatically unless static)</td></tr>
+  <tr><td><code>opacity</code></td><td>Number</td><td>0 (invisible) to 1 (opaque)</td></tr>
+  <tr><td><code>showIt</code></td><td>Boolean</td><td>Visibility toggle</td></tr>
+  <tr><td><code>isStatic</code></td><td>Boolean</td><td>If true, velocity is not applied</td></tr>
+  <tr><td><code>sprite</code></td><td>Sprite</td><td>Visual appearance</td></tr>
+</table>
+
+<pre><code><span class="cm">// Create a game object in script</span>
+<span class="kw">var</span> spr = <span class="kw">new</span> <span class="ty">Sprite</span>(<span class="num">32</span>, <span class="num">32</span>, <span class="str">'assets/sprites/player.png'</span>);
+<span class="kw">var</span> player = <span class="kw">new</span> <span class="ty">GameObject</span>(spr, <span class="kw">new</span> <span class="ty">Vec2</span>(<span class="num">100</span>, <span class="num">100</span>));
+player.name = <span class="str">'Player'</span>;
+layer.registerGameObject(player);</code></pre>
+
+<!-- ══════════════════════════════════════════════ -->
+<h2 id="elements">Elements</h2>
+<p>Elements are visual objects for static decorations or UI components. The editor supports four types:</p>
+
+<h3 id="uilabel">UILabel</h3>
+<p>Text-rendering UI element.</p>
+<pre><code><span class="kw">var</span> label = <span class="kw">new</span> <span class="ty">UILabel</span>(<span class="str">'Score: 0'</span>, <span class="kw">new</span> <span class="ty">Vec2</span>(<span class="num">10</span>, <span class="num">10</span>), {
+  fontSize: <span class="num">20</span>,
+  fontFamily: <span class="str">'monospace'</span>,
+  color: <span class="str">'white'</span>
+});
+uiLayer.registerElement(label);
+
+<span class="cm">// Update text later</span>
+label.setText(<span class="str">'Score: 500'</span>);</code></pre>
+
+<table>
+  <tr><th>Option</th><th>Default</th><th>Description</th></tr>
+  <tr><td><code>fontSize</code></td><td>14</td><td>Font size in pixels</td></tr>
+  <tr><td><code>fontFamily</code></td><td><code>'monospace'</code></td><td>CSS font family</td></tr>
+  <tr><td><code>fontStyle</code></td><td><code>'normal'</code></td><td>CSS font style (normal, bold, italic)</td></tr>
+  <tr><td><code>color</code></td><td><code>'white'</code></td><td>Text color</td></tr>
+</table>
+
+<h3 id="uibutton">UIButton</h3>
+<p>Interactive button element with hover and press states.</p>
+<pre><code><span class="kw">var</span> btn = <span class="kw">new</span> <span class="ty">UIButton</span>(<span class="kw">new</span> <span class="ty">Vec2</span>(<span class="num">100</span>, <span class="num">200</span>), <span class="kw">new</span> <span class="ty">Size</span>(<span class="num">120</span>, <span class="num">40</span>), {
+  label: <span class="str">'Start'</span>,
+  normalColor: <span class="str">'#333'</span>,
+  hoverColor: <span class="str">'#555'</span>,
+  pressedColor: <span class="str">'#777'</span>,
+  borderColor: <span class="str">'#888'</span>
+});
+btn.onClick = <span class="kw">function</span>() { <span class="cm">/* handle click */</span> };
+uiLayer.registerElement(btn);</code></pre>
+
+<h3 id="uipanel">UIPanel</h3>
+<p>A rectangular panel for backgrounds and containers.</p>
+<pre><code><span class="kw">var</span> panel = <span class="kw">new</span> <span class="ty">UIPanel</span>(<span class="kw">new</span> <span class="ty">Vec2</span>(<span class="num">50</span>, <span class="num">50</span>), <span class="kw">new</span> <span class="ty">Size</span>(<span class="num">200</span>, <span class="num">150</span>), {
+  fillColor: <span class="str">'rgba(0,0,0,0.5)'</span>,
+  borderColor: <span class="str">'#888'</span>,
+  borderWidth: <span class="num">2</span>
+});
+uiLayer.registerElement(panel);</code></pre>
+
+<!-- ══════════════════════════════════════════════ -->
+<h2 id="cameras">Cameras</h2>
+<p>Cameras control the viewport into the game world. Add a camera from the Properties panel when a scene is selected.</p>
+
+<h3 id="fixed-camera">Fixed Camera</h3>
+<p>A static viewpoint. The camera does not follow objects.</p>
+<pre><code><span class="kw">var</span> cam = <span class="kw">new</span> <span class="ty">Camera</span>(<span class="num">960</span>, <span class="num">540</span>, <span class="num">960</span>, <span class="num">540</span>, <span class="num">10</span>);
+<span class="cm">// (screenW, screenH, levelW, levelH, speed)</span>
+<span class="kw">this</span>.setCamera(cam);</code></pre>
+
+<h3 id="world-camera">World Camera</h3>
+<p>Follows a game object with smooth interpolation, zoom, and shake support.</p>
+<pre><code><span class="kw">var</span> cam = <span class="kw">new</span> <span class="ty">WorldCamera</span>(<span class="num">960</span>, <span class="num">540</span>, <span class="num">3000</span>, <span class="num">2000</span>, <span class="num">10</span>);
+cam.smoothFollow = <span class="kw">true</span>;
+cam.followLerp = <span class="num">0.1</span>;
+<span class="kw">this</span>.setCamera(cam);
+
+<span class="cm">// In onUpdate: follow the player</span>
+cam.setPositionTo(player, elapsedTime);
+
+<span class="cm">// Zoom and shake</span>
+cam.setZoom(<span class="num">1.5</span>);
+cam.shake(<span class="num">5</span>, <span class="num">0.3</span>); <span class="cm">// intensity, duration</span></code></pre>
+
+<table>
+  <tr><th>Property</th><th>Default</th><th>Description</th></tr>
+  <tr><td><code>smoothFollow</code></td><td><code>true</code></td><td>Enable smooth interpolation when following</td></tr>
+  <tr><td><code>followLerp</code></td><td><code>0.1</code></td><td>Interpolation factor (0 = no movement, 1 = instant)</td></tr>
+  <tr><td><code>_zoom</code></td><td><code>1</code></td><td>Zoom level (1 = normal, 2 = 2x zoom in)</td></tr>
+</table>
+
+<!-- ══════════════════════════════════════════════ -->
+<h2 id="engine-api">Engine API Reference</h2>
+
+<!-- ── Engine ── -->
+<h3 id="api-engine">Engine</h3>
+<p>The main engine instance. Available as <code>engine</code> in all scene scripts.</p>
+
+<h4>Properties</h4>
+<table>
+  <tr><th>Property</th><th>Type</th><th>Description</th></tr>
+  <tr><td><code>canvas</code></td><td>HTMLCanvasElement</td><td>The game canvas</td></tr>
+  <tr><td><code>ctx</code></td><td>CanvasRenderingContext2D</td><td>2D drawing context</td></tr>
+  <tr><td><code>drawer</code></td><td>Drawer</td><td>Drawing utility</td></tr>
+  <tr><td><code>input</code></td><td>InputManager</td><td>Keyboard, mouse, and gamepad input</td></tr>
+  <tr><td><code>sound</code></td><td>SoundManager</td><td>Audio management</td></tr>
+  <tr><td><code>scenes</code></td><td>Array</td><td>All registered scenes</td></tr>
+  <tr><td><code>currentScene</code></td><td>Scene</td><td>Currently active scene</td></tr>
+  <tr><td><code>elapsedTime</code></td><td>Number</td><td>Delta time in seconds</td></tr>
+  <tr><td><code>fps</code></td><td>Number</td><td>Current frames per second</td></tr>
+  <tr><td><code>displayFPS</code></td><td>Boolean</td><td>Show FPS counter</td></tr>
+  <tr><td><code>paused</code></td><td>Boolean</td><td>Whether the engine is paused</td></tr>
+</table>
+
+<h4>Methods</h4>
+<div class="method"><div class="method-sig">start()</div><div class="method-desc">Start the engine game loop.</div></div>
+<div class="method"><div class="method-sig">stop()</div><div class="method-desc">Stop the engine.</div></div>
+<div class="method"><div class="method-sig">pause() / resume()</div><div class="method-desc">Pause or resume the simulation. While paused, rendering continues but <code>elapsedTime</code> is zero.</div></div>
+<div class="method"><div class="method-sig">registerScene(scene)</div><div class="method-desc">Register a scene with the engine.</div></div>
+<div class="method"><div class="method-sig">goToScene(scene, data, transition, duration)</div><div class="method-desc">Switch to another scene. <code>data</code> is passed to the new scene (retrieve with <code>getIncomingData()</code>). Transition: <code>'none'</code>, <code>'fade'</code>, <code>'slide-left'</code>, <code>'slide-right'</code>. Duration in seconds.</div></div>
+<div class="method"><div class="method-sig">setCanvasSize(width, height)</div><div class="method-desc">Set the canvas dimensions.</div></div>
+<div class="method"><div class="method-sig">setFullScreen()</div><div class="method-desc">Make the canvas fill the browser window, auto-resizing on window change.</div></div>
+<div class="method"><div class="method-sig">screenSize()</div><div class="method-desc">Returns a <code>Size</code> object with current canvas dimensions.</div></div>
+<div class="method"><div class="method-sig">mouseOnTopOf(gameObject)</div><div class="method-desc">Check if the mouse cursor is over a game object.</div></div>
+<div class="method"><div class="method-sig">preloadImage(url)</div><div class="method-desc">Preload an image for later use.</div></div>
+
+<!-- ── Scene ── -->
+<h3 id="api-scene">Scene</h3>
+
+<div class="method"><div class="method-sig">registerLayer(layer)</div><div class="method-desc">Add a layer to the scene.</div></div>
+<div class="method"><div class="method-sig">removeLayer(layer)</div><div class="method-desc">Remove a layer from the scene.</div></div>
+<div class="method"><div class="method-sig">setCamera(camera)</div><div class="method-desc">Set the scene's camera.</div></div>
+<div class="method"><div class="method-sig">getIncomingData()</div><div class="method-desc">Get data passed from a previous scene via <code>goToScene()</code>.</div></div>
+<div class="method"><div class="method-sig">getTopLayer()</div><div class="method-desc">Get the layer with the highest z-order.</div></div>
+<div class="method"><div class="method-sig">findByName(name)</div><div class="method-desc">Find a game object or element by its name across all layers.</div></div>
+<div class="method"><div class="method-sig">reset()</div><div class="method-desc">Reset the scene so <code>OnCreate</code> runs again on the next entry.</div></div>
+
+<!-- ── GameObject ── -->
+<h3 id="api-gameobject">GameObject</h3>
+<p><code>new GameObject(sprite, position, opacity)</code></p>
+
+<div class="method"><div class="method-sig">collisionWith(other)</div><div class="method-desc">Check AABB collision with another game object. Returns <code>true</code> if overlapping.</div></div>
+<div class="method"><div class="method-sig">staticObject() / notStaticObject()</div><div class="method-desc">Toggle static mode. Static objects ignore velocity.</div></div>
+<div class="method"><div class="method-sig">show() / hide()</div><div class="method-desc">Toggle visibility.</div></div>
+<div class="method"><div class="method-sig">setSprite(sprite)</div><div class="method-desc">Change the game object's sprite.</div></div>
+<div class="method"><div class="method-sig">registerAnimation(animation)</div><div class="method-desc">Set an animation controller.</div></div>
+<div class="method"><div class="method-sig">setAnimation(name)</div><div class="method-desc">Activate a named animation.</div></div>
+
+<!-- ── Element ── -->
+<h3 id="api-element">Element</h3>
+<p><code>new Element(sprite, position, opacity)</code></p>
+<p>Base class for visual elements. Supports <code>show()</code>, <code>hide()</code>, and position/opacity properties.</p>
+
+<!-- ── Sprite ── -->
+<h3 id="api-sprite">Sprite &amp; SpriteSheet</h3>
+
+<h4>Sprite</h4>
+<pre><code><span class="kw">var</span> spr = <span class="kw">new</span> <span class="ty">Sprite</span>(width, height, imagePath);</code></pre>
+<div class="method"><div class="method-sig">changeImage(path)</div><div class="method-desc">Change the sprite's image at runtime.</div></div>
+
+<h4>SpriteSheet</h4>
+<pre><code><span class="kw">var</span> sheet = <span class="kw">new</span> <span class="ty">SpriteSheet</span>(
+  <span class="str">'walk'</span>,    <span class="cm">// name</span>
+  <span class="num">64</span>, <span class="num">64</span>,   <span class="cm">// frame width, height</span>
+  <span class="num">6</span>,         <span class="cm">// frame speed (frames per update)</span>
+  <span class="num">0</span>, <span class="num">7</span>,      <span class="cm">// start frame, end frame</span>
+  <span class="str">'assets/sprites/character.png'</span>,
+  <span class="kw">false</span>,     <span class="cm">// once (false = loop)</span>
+  <span class="kw">null</span>,      <span class="cm">// callback on end</span>
+  -<span class="num">1</span>         <span class="cm">// once_max_frame</span>
+);</code></pre>
+
+<!-- ── Vec2 ── -->
+<h3 id="api-vec2">Vec2</h3>
+<p><code>new Vec2(x, y)</code> &mdash; 2D vector used for positions, velocities, and directions.</p>
+
+<table>
+  <tr><th>Method</th><th>Returns</th><th>Description</th></tr>
+  <tr><td><code>add(v)</code></td><td>Vec2</td><td>Vector addition</td></tr>
+  <tr><td><code>sub(v)</code></td><td>Vec2</td><td>Vector subtraction</td></tr>
+  <tr><td><code>scale(s)</code></td><td>Vec2</td><td>Scalar multiplication</td></tr>
+  <tr><td><code>length()</code></td><td>Number</td><td>Magnitude</td></tr>
+  <tr><td><code>distance(v)</code></td><td>Number</td><td>Distance to another vector</td></tr>
+  <tr><td><code>normalize()</code></td><td>Vec2</td><td>Unit vector</td></tr>
+  <tr><td><code>lerp(v, t)</code></td><td>Vec2</td><td>Linear interpolation</td></tr>
+  <tr><td><code>dot(v)</code></td><td>Number</td><td>Dot product</td></tr>
+  <tr><td><code>clone()</code></td><td>Vec2</td><td>Deep copy</td></tr>
+</table>
+
+<p><strong>Static helpers:</strong> <code>Vec2.zero()</code>, <code>Vec2.up()</code>, <code>Vec2.down()</code>, <code>Vec2.left()</code>, <code>Vec2.right()</code></p>
+
+<!-- ── Collision ── -->
+<h3 id="api-collision">Collision</h3>
+<p>All methods are static and return <code>boolean</code>.</p>
+
+<div class="method"><div class="method-sig">Collision.rectRect(posA, sizeA, posB, sizeB)</div><div class="method-desc">AABB rectangle-to-rectangle collision.</div></div>
+<div class="method"><div class="method-sig">Collision.circleCircle(posA, radiusA, posB, radiusB)</div><div class="method-desc">Circle-to-circle collision.</div></div>
+<div class="method"><div class="method-sig">Collision.circleRect(circlePos, radius, rectPos, rectSize)</div><div class="method-desc">Circle-to-rectangle collision.</div></div>
+<div class="method"><div class="method-sig">Collision.pointRect(point, rectPos, rectSize)</div><div class="method-desc">Point inside rectangle check.</div></div>
+<div class="method"><div class="method-sig">Collision.pointCircle(point, circlePos, radius)</div><div class="method-desc">Point inside circle check.</div></div>
+
+<!-- ── Input ── -->
+<h3 id="api-input">Input &amp; Keys</h3>
+<p>Access via <code>engine.input</code>.</p>
+
+<h4>Keyboard</h4>
+<div class="method"><div class="method-sig">isKeyDown(key)</div><div class="method-desc">Returns <code>true</code> while the key is held down.</div></div>
+<div class="method"><div class="method-sig">isKeyPressed(key)</div><div class="method-desc">Returns <code>true</code> only on the frame the key was first pressed.</div></div>
+<div class="method"><div class="method-sig">isKeyReleased(key)</div><div class="method-desc">Returns <code>true</code> only on the frame the key was released.</div></div>
+
+<h4>Mouse</h4>
+<div class="method"><div class="method-sig">isMouseDown(button)</div><div class="method-desc">Check if mouse button is held. 0 = left, 1 = middle, 2 = right.</div></div>
+<div class="method"><div class="method-sig">isMousePressed(button) / isMouseReleased(button)</div><div class="method-desc">Frame-accurate press/release detection.</div></div>
+<div class="method"><div class="method-sig">getMousePosition()</div><div class="method-desc">Returns <code>Vec2</code> with mouse coordinates relative to canvas.</div></div>
+
+<h4>Gamepad</h4>
+<div class="method"><div class="method-sig">isGamepadButtonDown(buttonIndex, padIndex)</div><div class="method-desc">Check if a gamepad button is pressed.</div></div>
+<div class="method"><div class="method-sig">getGamepadAxis(axisIndex, padIndex)</div><div class="method-desc">Get axis value from -1 to 1.</div></div>
+
+<!-- ── Sound ── -->
+<h3 id="api-sound">Sound &amp; SoundManager</h3>
+
+<h4>Sound</h4>
+<pre><code><span class="kw">var</span> sfx = <span class="kw">new</span> <span class="ty">Sound</span>(<span class="str">'assets/audio/explosion.mp3'</span>, <span class="num">80</span>);
+sfx.play();
+
+<span class="kw">var</span> music = <span class="kw">new</span> <span class="ty">Sound</span>(<span class="str">'assets/audio/bgm.mp3'</span>, <span class="num">50</span>, <span class="kw">true</span>); <span class="cm">// loop</span></code></pre>
+
+<table>
+  <tr><th>Method</th><th>Description</th></tr>
+  <tr><td><code>play()</code></td><td>Start playback</td></tr>
+  <tr><td><code>pause()</code></td><td>Pause playback</td></tr>
+  <tr><td><code>stop()</code></td><td>Stop and reset to beginning</td></tr>
+  <tr><td><code>mute() / unMute()</code></td><td>Toggle mute</td></tr>
+  <tr><td><code>duration()</code></td><td>Get length in seconds</td></tr>
+  <tr><td><code>setTime(time)</code></td><td>Seek to position</td></tr>
+  <tr><td><code>ending(callback)</code></td><td>Set on-end callback</td></tr>
+</table>
+
+<h4>SoundManager</h4>
+<p>Access via <code>engine.sound</code>.</p>
+
+<div class="method"><div class="method-sig">playMusic(sound)</div><div class="method-desc">Play background music (stops previous, loops automatically).</div></div>
+<div class="method"><div class="method-sig">playSFX(sound)</div><div class="method-desc">Play a one-shot sound effect.</div></div>
+<div class="method"><div class="method-sig">stopMusic()</div><div class="method-desc">Stop current background music.</div></div>
+<div class="method"><div class="method-sig">setMasterVolume(volume)</div><div class="method-desc">Set master volume (0 to 1).</div></div>
+<div class="method"><div class="method-sig">muteAll() / unmuteAll()</div><div class="method-desc">Mute or unmute all audio.</div></div>
+
+<!-- ── Drawer ── -->
+<h3 id="api-drawer">Drawer</h3>
+<p>Access via <code>engine.drawer</code>. Used for custom rendering in scene scripts.</p>
+
+<div class="method"><div class="method-sig">rectangle(position, size, filled, borderWidth, color, opacity)</div><div class="method-desc">Draw a rectangle. <code>filled</code> = true for solid, false for outline.</div></div>
+<div class="method"><div class="method-sig">circle(position, radius, startAngle, endAngle, filled, borderWidth, color, opacity)</div><div class="method-desc">Draw a circle or arc. Use <code>0, -1</code> for full circle.</div></div>
+<div class="method"><div class="method-sig">line(p1, p2, lineWidth, color)</div><div class="method-desc">Draw a line between two Vec2 points.</div></div>
+<div class="method"><div class="method-sig">gradient(position, size, startPos, endPos, color1, color2)</div><div class="method-desc">Draw a linear gradient rectangle.</div></div>
+<div class="method"><div class="method-sig">text(text, position, fontSize, fontFamily, fontStyle, color, opacity)</div><div class="method-desc">Draw text at a position.</div></div>
+<div class="method"><div class="method-sig">textWidth(text, fontSize, fontFamily, fontStyle)</div><div class="method-desc">Measure text width in pixels.</div></div>
+<div class="method"><div class="method-sig">clear()</div><div class="method-desc">Clear the entire canvas.</div></div>
+
+<div class="callout callout-tip">
+  <div class="callout-label tip">Tip</div>
+  You can also access the raw canvas context via <code>engine.drawer.ctx</code> for advanced drawing operations like <code>ctx.fillRect()</code> or custom path rendering.
+</div>
+
+<!-- ── Particles ── -->
+<h3 id="api-particles">ParticleEmitter</h3>
+<p>Particle system for visual effects.</p>
+
+<h4>Presets</h4>
+<pre><code><span class="cm">// Quick presets</span>
+<span class="kw">var</span> fire = <span class="ty">ParticleEmitter</span>.fire(engine, <span class="kw">new</span> <span class="ty">Vec2</span>(<span class="num">100</span>, <span class="num">200</span>));
+<span class="kw">var</span> smoke = <span class="ty">ParticleEmitter</span>.smoke(engine, position);
+<span class="kw">var</span> boom = <span class="ty">ParticleEmitter</span>.explosion(engine, position);
+<span class="kw">var</span> spark = <span class="ty">ParticleEmitter</span>.sparkle(engine, position);
+
+<span class="cm">// Draw in onUpdate</span>
+fire.draw(elapsedTime);</code></pre>
+
+<h4>Custom Emitter</h4>
+<pre><code><span class="kw">var</span> emitter = <span class="kw">new</span> <span class="ty">ParticleEmitter</span>(engine, {
+  position: <span class="kw">new</span> <span class="ty">Vec2</span>(<span class="num">200</span>, <span class="num">300</span>),
+  minSpeed: <span class="num">20</span>, maxSpeed: <span class="num">80</span>,
+  minAngle: <span class="num">0</span>, maxAngle: Math.PI * <span class="num">2</span>,
+  minLife: <span class="num">0.5</span>, maxLife: <span class="num">1.5</span>,
+  minSize: <span class="num">2</span>, maxSize: <span class="num">6</span>,
+  startColor: { r: <span class="num">255</span>, g: <span class="num">200</span>, b: <span class="num">0</span> },
+  endColor: { r: <span class="num">255</span>, g: <span class="num">50</span>, b: <span class="num">0</span> },
+  gravity: <span class="kw">new</span> <span class="ty">Vec2</span>(<span class="num">0</span>, <span class="num">100</span>),
+  rate: <span class="num">10</span>,
+  shape: <span class="str">'circle'</span>
+});</code></pre>
+
+<div class="method"><div class="method-sig">emit(count)</div><div class="method-desc">Emit a burst of particles.</div></div>
+<div class="method"><div class="method-sig">draw(elapsedTime)</div><div class="method-desc">Update and render all active particles.</div></div>
+<div class="method"><div class="method-sig">stop()</div><div class="method-desc">Stop emitting new particles.</div></div>
+<div class="method"><div class="method-sig">clear()</div><div class="method-desc">Remove all particles immediately.</div></div>
+
+<!-- ── Tween ── -->
+<h3 id="api-tween">TweenManager</h3>
+<p>Access via <code>engine.tweens</code>. Animate properties over time.</p>
+
+<div class="method"><div class="method-sig">engine.tweens.add(target, property, from, to, duration, easing)</div><div class="method-desc">Tween a numeric property on any object.</div></div>
+
+<!-- ══════════════════════════════════════════════ -->
+<h2 id="export">Exporting Your Game</h2>
+<ol>
+  <li>Click <strong>Export</strong> in the toolbar</li>
+  <li>Choose an output folder</li>
+  <li>The editor generates a complete standalone game:</li>
+</ol>
+
+<div class="layout-diagram">
+<span class="hl">ExportedGame/</span>
+├── <span class="hl2">index.html</span>       <span class="cm"># Standalone HTML page</span>
+├── <span class="hl2">game.js</span>          <span class="cm"># Generated scene classes &amp; bootstrap</span>
+├── <span class="hl2">_sounds.js</span>       <span class="cm"># Base64 audio cache (if audio assets exist)</span>
+├── <span class="hl">engine/</span>          <span class="cm"># Engine files</span>
+├── <span class="hl">assets/</span>          <span class="cm"># Sprite &amp; audio files</span>
+└── <span class="hl">scripts/</span>         <span class="cm"># Custom JS files</span>
+</div>
+
+<p>The exported game uses a script loader that loads files in order: audio cache, custom scripts, then <code>game.js</code>. The engine intro scene plays before your default scene.</p>
+
+<div class="callout callout-warn">
+  <div class="callout-label warn">Note</div>
+  The project must be saved before exporting. Audio files are embedded as base64 in <code>_sounds.js</code> to avoid CORS issues when opening <code>index.html</code> locally.
+</div>
+
+<!-- ══════════════════════════════════════════════ -->
+<h2 id="snippets">Code Snippets</h2>
+<p>Available in the Code tab's helper panel. Click to insert at cursor.</p>
+
+<h4>Arrow Keys Movement</h4>
+<pre><code><span class="kw">var</span> speed = <span class="num">200</span>;
+<span class="kw">var</span> obj = <span class="kw">this</span>.findByName(<span class="str">'OBJECT_NAME'</span>);
+<span class="kw">if</span> (engine.input.isKeyDown(Keys.ArrowLeft))  obj.position.X -= speed * elapsedTime;
+<span class="kw">if</span> (engine.input.isKeyDown(Keys.ArrowRight)) obj.position.X += speed * elapsedTime;
+<span class="kw">if</span> (engine.input.isKeyDown(Keys.ArrowUp))    obj.position.Y -= speed * elapsedTime;
+<span class="kw">if</span> (engine.input.isKeyDown(Keys.ArrowDown))  obj.position.Y += speed * elapsedTime;</code></pre>
+
+<h4>Collision Check</h4>
+<pre><code><span class="kw">var</span> a = <span class="kw">this</span>.findByName(<span class="str">'OBJECT_A'</span>);
+<span class="kw">var</span> b = <span class="kw">this</span>.findByName(<span class="str">'OBJECT_B'</span>);
+<span class="kw">if</span> (a.collisionWith(b)) {
+  <span class="cm">// handle collision</span>
+}</code></pre>
+
+<h4>Boundary Clamp</h4>
+<pre><code><span class="kw">var</span> obj = <span class="kw">this</span>.findByName(<span class="str">'OBJECT_NAME'</span>);
+<span class="kw">var</span> w = engine.canvas.width;
+<span class="kw">var</span> h = engine.canvas.height;
+obj.position.X = Math.max(<span class="num">0</span>, Math.min(w - obj.sprite.width, obj.position.X));
+obj.position.Y = Math.max(<span class="num">0</span>, Math.min(h - obj.sprite.height, obj.position.Y));</code></pre>
+
+<h4>Play Sound Effect</h4>
+<pre><code><span class="kw">var</span> sfx = <span class="kw">new</span> <span class="ty">Sound</span>(<span class="str">'assets/audio/FILENAME.mp3'</span>, <span class="num">80</span>);
+sfx.play();</code></pre>
+
+<h4>Play Background Music</h4>
+<pre><code><span class="kw">if</span> (!<span class="kw">this</span>.bgMusic) {
+  <span class="kw">this</span>.bgMusic = <span class="kw">new</span> <span class="ty">Sound</span>(<span class="str">'assets/audio/FILENAME.mp3'</span>, <span class="num">50</span>, <span class="kw">true</span>);
+  engine.sound.playMusic(<span class="kw">this</span>.bgMusic);
+}</code></pre>
+
+<!-- ══════════════════════════════════════════════ -->
+<h2 id="keys-ref">Key Reference</h2>
+<p>Use the <code>Keys</code> object with <code>engine.input</code> methods.</p>
+
+<table>
+  <tr><th>Category</th><th>Keys</th></tr>
+  <tr><td><strong>Arrows</strong></td><td><code>Keys.ArrowUp</code>, <code>Keys.ArrowDown</code>, <code>Keys.ArrowLeft</code>, <code>Keys.ArrowRight</code></td></tr>
+  <tr><td><strong>Letters</strong></td><td><code>Keys.A</code> through <code>Keys.Z</code></td></tr>
+  <tr><td><strong>Numbers</strong></td><td><code>Keys.Digit0</code> through <code>Keys.Digit9</code></td></tr>
+  <tr><td><strong>Function</strong></td><td><code>Keys.F1</code> through <code>Keys.F12</code></td></tr>
+  <tr><td><strong>Special</strong></td><td><code>Keys.Space</code>, <code>Keys.Enter</code>, <code>Keys.Escape</code>, <code>Keys.Tab</code>, <code>Keys.Backspace</code>, <code>Keys.Delete</code></td></tr>
+  <tr><td><strong>Modifiers</strong></td><td><code>Keys.ShiftLeft</code>, <code>Keys.ControlLeft</code>, <code>Keys.AltLeft</code> (and <code>Right</code> variants)</td></tr>
+  <tr><td><strong>Navigation</strong></td><td><code>Keys.Home</code>, <code>Keys.End</code>, <code>Keys.PageUp</code>, <code>Keys.PageDown</code>, <code>Keys.Insert</code></td></tr>
+  <tr><td><strong>Punctuation</strong></td><td><code>Keys.Comma</code>, <code>Keys.Period</code>, <code>Keys.Semicolon</code>, <code>Keys.Slash</code>, <code>Keys.Minus</code>, <code>Keys.Equal</code></td></tr>
+</table>
+
+<!-- ── Footer ── -->
+<div style="margin-top: 80px; padding-top: 20px; border-top: 1px solid var(--border); color: var(--muted); font-size: 12px;">
+  JCGE &mdash; JS Canvas Game Engine &bull; <a href="https://github.com/slient-commit/js-canvas-game-engine" style="color: var(--accent); text-decoration: none;">GitHub</a>
+</div>
+
+</div>
+</body>
+</html>

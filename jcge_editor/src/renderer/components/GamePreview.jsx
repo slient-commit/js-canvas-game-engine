@@ -97,6 +97,21 @@ export default function GamePreview() {
   const iframeRef = useRef(null);
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [engineReady, setEngineReady] = useState(false);
+  const prevFilePathRef = useRef(null);
+
+  // Reload iframe when project file path changes (switching projects)
+  useEffect(() => {
+    const currentPath = state.project?.filePath || null;
+    if (prevFilePathRef.current && currentPath && currentPath !== prevFilePathRef.current) {
+      // Different project loaded — reset and reload iframe
+      setIframeLoaded(false);
+      setEngineReady(false);
+      if (iframeRef.current) {
+        iframeRef.current.src = iframeRef.current.src;
+      }
+    }
+    prevFilePathRef.current = currentPath;
+  }, [state.project?.filePath]);
 
   // Listen for messages from the iframe
   useEffect(() => {

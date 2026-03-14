@@ -34,6 +34,27 @@
   var savedSceneState = null;
   var gridEnabled = true;
   var selectedObjectId = null;
+  var _OriginalAudio = window.Audio;
+  var _audioCacheActive = false;
+
+  function installAudioCache(cache) {
+    window.AUDIO_CACHE = cache;
+    if (!_audioCacheActive) {
+      window.Audio = function(src) {
+        return new _OriginalAudio((window.AUDIO_CACHE && window.AUDIO_CACHE[src]) || src);
+      };
+      window.Audio.prototype = _OriginalAudio.prototype;
+      _audioCacheActive = true;
+    }
+  }
+
+  function removeAudioCache() {
+    if (_audioCacheActive) {
+      window.Audio = _OriginalAudio;
+      _audioCacheActive = false;
+    }
+    delete window.AUDIO_CACHE;
+  }
 
   // ── Load engine scripts sequentially via fetch + eval ──
   // Using fetch instead of <script> tags to avoid cross-origin/CSP issues
@@ -44,6 +65,19 @@
     function loadNext() {
       if (index >= engineFiles.length) {
         console.log('[EditorBridge] All engine scripts loaded.');
+        // Ensure engine globals are on window for new Function() access
+        // (class/const declarations create lexical bindings, not window properties)
+        var globals = ['Keys', 'Collision', 'Vec2', 'Sprite', 'SpriteSheet',
+          'GameObject', 'Element', 'Layer', 'UILayer', 'Scene', 'Engine',
+          'Camera', 'WorldCamera', 'Size', 'MouseButton',
+          'ParticleEmitter', 'RGB', 'UILabel', 'UIPanel', 'UIButton', 'Fire', 'Particle',
+          'Sound', 'SoundManager'];
+        for (var g = 0; g < globals.length; g++) {
+          try {
+            var val = eval(globals[g]);
+            if (val !== undefined && !window[globals[g]]) window[globals[g]] = val;
+          } catch (ex) {}
+        }
         callback();
         return;
       }
@@ -136,6 +170,7 @@
               var pos = new Vec2(elData.position.X, elData.position.Y);
               var el = new Element(sprite, pos, elData.opacity !== undefined ? elData.opacity : 1);
               el.id = elData.id;
+              el.name = elData.name || 'Element';
               el.showIt = elData.showIt !== undefined ? elData.showIt : true;
               layer.registerElement(el);
             }
@@ -173,7 +208,81 @@
       }
     };
 
+    // Find an object by name across all layers
+    scene.findByName = function (name) {
+      for (var i = 0; i < this.layers.length; i++) {
+        var layer = this.layers[i].layer;
+        for (var j = 0; j < layer.gameObjects.length; j++) {
+          if (layer.gameObjects[j].name === name) return layer.gameObjects[j];
+        }
+        for (var j = 0; j < layer.elements.length; j++) {
+          if (layer.elements[j].name === name) return layer.elements[j];
+        }
+      }
+      return null;
+    };
+
     return scene;
+  }
+
+  // ── User script execution ──
+  var originalOnUpdate = null;
+
+  function applyUserScript(scene, scriptData) {
+    if (!scene || !scriptData) return;
+
+    // Save original OnUpdate for reset
+    if (!originalOnUpdate) originalOnUpdate = scene.OnUpdate;
+
+    // Preamble injects engine/Keys/Collision into the function body directly
+    // so new Function() can access them regardless of scope chain issues
+    var preamble = 'var engine = window.engine;\n'
+      + 'var Keys = window.Keys;\n'
+      + 'var Collision = window.Collision;\n'
+      + 'var Vec2 = window.Vec2;\n'
+      + 'var ParticleEmitter = window.ParticleEmitter;\n'
+      + 'var RGB = window.RGB;\n'
+      + 'var UILabel = window.UILabel;\n'
+      + 'var UIPanel = window.UIPanel;\n'
+      + 'var Size = window.Size;\n'
+      + 'var Sound = window.Sound;\n';
+
+    // Compile and attach OnUpdate
+    if (scriptData.onUpdate && scriptData.onUpdate.trim()) {
+      try {
+        var updateFn = new Function('elapsedTime', preamble + scriptData.onUpdate + '\nreturn true;');
+        scene.OnUpdate = function (elapsedTime) {
+          try {
+            return updateFn.call(this, elapsedTime);
+          } catch (e) {
+            console.error('[Script Error in OnUpdate]', e.message);
+            window.parent.postMessage({ type: 'scriptError', error: e.message, hook: 'onUpdate' }, '*');
+            return true;
+          }
+        };
+      } catch (e) {
+        console.error('[Script Compile Error]', e.message);
+        window.parent.postMessage({ type: 'scriptError', error: e.message, hook: 'onUpdate' }, '*');
+      }
+    }
+
+    // Run onCreate immediately (scene already exists)
+    if (scriptData.onCreate && scriptData.onCreate.trim()) {
+      try {
+        var createFn = new Function(preamble + scriptData.onCreate);
+        createFn.call(scene);
+      } catch (e) {
+        console.error('[Script Error in OnCreate]', e.message);
+        window.parent.postMessage({ type: 'scriptError', error: e.message, hook: 'onCreate' }, '*');
+      }
+    }
+  }
+
+  function restoreOriginalScript(scene) {
+    if (originalOnUpdate) {
+      scene.OnUpdate = originalOnUpdate;
+      originalOnUpdate = null;
+    }
   }
 
   // ── Editor overlay drawing (runs AFTER engine's built-in draw) ──
@@ -552,6 +661,33 @@
         selectedObjectId = msg.objectId;
         break;
 
+      case 'loadScript':
+        if (editorScene) {
+          applyUserScript(editorScene, msg.script);
+        }
+        break;
+
+      case 'loadCustomScripts':
+        if (msg.scripts && msg.scripts.length > 0) {
+          for (var i = 0; i < msg.scripts.length; i++) {
+            try {
+              var scriptEl = document.createElement('script');
+              scriptEl.textContent = msg.scripts[i].content;
+              scriptEl.setAttribute('data-custom-script', msg.scripts[i].filename);
+              document.head.appendChild(scriptEl);
+            } catch (e) {
+              console.error('[EditorBridge] Error loading custom script: ' + msg.scripts[i].filename, e);
+            }
+          }
+        }
+        break;
+
+      case 'loadAudioCache':
+        if (msg.audioCache) {
+          installAudioCache(msg.audioCache);
+        }
+        break;
+
       case 'play':
         if (engine) engine.resume();
         break;
@@ -569,6 +705,23 @@
 
       case 'reset':
         if (editorScene && savedSceneState) {
+          restoreOriginalScript(editorScene);
+          // Stop all audio
+          if (engine && engine.sound) {
+            engine.sound.stopMusic();
+          }
+          var audios = document.querySelectorAll('audio');
+          for (var i = 0; i < audios.length; i++) {
+            audios[i].pause();
+            audios[i].currentTime = 0;
+          }
+          // Remove audio cache and restore original Audio constructor
+          removeAudioCache();
+          // Remove injected custom scripts to avoid duplicates on next Play
+          var customScripts = document.querySelectorAll('script[data-custom-script]');
+          for (var i = 0; i < customScripts.length; i++) {
+            customScripts[i].parentNode.removeChild(customScripts[i]);
+          }
           editorScene.loadSceneData(savedSceneState);
           if (engine) engine.pause();
         }
@@ -599,6 +752,7 @@
           var pos = new Vec2(objectData.position.X, objectData.position.Y);
           var el = new Element(sprite, pos, objectData.opacity || 1);
           el.id = objectData.id;
+          el.name = objectData.name || 'Element';
           el.showIt = objectData.showIt !== undefined ? objectData.showIt : true;
           layer.registerElement(el);
         }
@@ -622,6 +776,7 @@
     canvas.height = height;
 
     engine = new Engine(canvas);
+    window.engine = engine; // Expose globally so user scripts can access it
     engine.setCanvasSize(width, height);
 
     // Prevent Drawer's constructor from resizing canvas to window size
@@ -638,7 +793,14 @@
     // Patch the engine's game loop to add editor overlays after drawing
     var originalTimerElapsed = engine.timerElapsed.bind(engine);
     engine.timerElapsed = function (timestamp) {
-      originalTimerElapsed(timestamp);
+      try {
+        originalTimerElapsed(timestamp);
+      } catch (e) {
+        // Prevent broken sprites from crashing the render loop
+        if (e.message && e.message.indexOf('broken') === -1) {
+          console.error('[editorBridge] Render error:', e);
+        }
+      }
       // Draw editor overlays on top of everything
       drawEditorOverlays(engine.ctx);
     };

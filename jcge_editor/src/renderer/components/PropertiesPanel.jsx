@@ -65,7 +65,7 @@ export default function PropertiesPanel() {
           <div className="prop-row">
             <span className="prop-label">Default</span>
             <div className="prop-value">
-              <input type="checkbox" checked={scene.isDefault} readOnly />
+              <input type="checkbox" checked={scene.isDefault} onChange={() => dispatch({ type: 'SET_DEFAULT_SCENE', id: scene.id })} />
             </div>
           </div>
         </div>
@@ -158,7 +158,7 @@ export default function PropertiesPanel() {
           <div className="prop-row">
             <span className="prop-label">UI Layer</span>
             <div className="prop-value">
-              <input type="checkbox" checked={selectedLayer.isUI} readOnly />
+              <input type="checkbox" checked={selectedLayer.isUI} onChange={() => dispatch({ type: 'TOGGLE_LAYER_UI', id: selectedLayer.id })} />
             </div>
           </div>
           <div className="prop-row">

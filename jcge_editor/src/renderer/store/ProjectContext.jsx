@@ -20,6 +20,7 @@ function createEmptyProject(name = 'Untitled', width = 960, height = 540) {
       name: 'MainScene',
       isDefault: true,
       camera: null,
+      script: { onUpdate: '', onCreate: '', onDestroy: '' },
       layers: [{
         id: 'layer_' + Math.random().toString(16).slice(2),
         name: 'ground',
@@ -32,7 +33,8 @@ function createEmptyProject(name = 'Untitled', width = 960, height = 540) {
     assets: {
       sprites: [],
       audio: []
-    }
+    },
+    scripts: []
   };
 }
 
@@ -137,6 +139,7 @@ function projectReducer(state, action) {
         name: action.name || 'NewScene',
         isDefault: false,
         camera: null,
+        script: { onUpdate: '', onCreate: '', onDestroy: '' },
         layers: [{
           id: 'layer_' + Math.random().toString(16).slice(2),
           name: 'ground',
@@ -168,6 +171,18 @@ function projectReducer(state, action) {
       };
     }
 
+    case 'SET_DEFAULT_SCENE': {
+      const scenes = state.project.scenes.map(s => ({
+        ...s,
+        isDefault: s.id === action.id
+      }));
+      return {
+        ...state,
+        project: { ...state.project, scenes },
+        dirty: true
+      };
+    }
+
     case 'RENAME_SCENE': {
       const scenes = state.project.scenes.map(s =>
         s.id === action.id ? { ...s, name: action.name } : s
@@ -192,6 +207,21 @@ function projectReducer(state, action) {
           elements: []
         };
         return { ...s, layers: [...s.layers, newLayer] };
+      });
+      return {
+        ...state,
+        project: { ...state.project, scenes },
+        dirty: true
+      };
+    }
+
+    case 'TOGGLE_LAYER_UI': {
+      const scenes = state.project.scenes.map(s => {
+        if (s.id !== state.selectedSceneId) return s;
+        const layers = s.layers.map(l =>
+          l.id === action.id ? { ...l, isUI: !l.isUI } : l
+        );
+        return { ...s, layers };
       });
       return {
         ...state,
@@ -324,6 +354,20 @@ function projectReducer(state, action) {
       };
     }
 
+    // ── Scene scripts ──
+    case 'UPDATE_SCENE_SCRIPT': {
+      const scenes = state.project.scenes.map(s =>
+        s.id === action.sceneId
+          ? { ...s, script: { ...(s.script || {}), ...action.script } }
+          : s
+      );
+      return {
+        ...state,
+        project: { ...state.project, scenes },
+        dirty: true
+      };
+    }
+
     case 'REMOVE_ASSET': {
       const cat = action.category;
       const assets = { ...state.project.assets };
@@ -331,6 +375,36 @@ function projectReducer(state, action) {
       return {
         ...state,
         project: { ...state.project, assets },
+        dirty: true
+      };
+    }
+
+    // ── Custom script files ──
+    case 'ADD_SCRIPT_FILE': {
+      const scripts = [...(state.project.scripts || []), action.script];
+      return {
+        ...state,
+        project: { ...state.project, scripts },
+        dirty: true
+      };
+    }
+
+    case 'REMOVE_SCRIPT_FILE': {
+      const scripts = (state.project.scripts || []).filter(s => s.key !== action.key);
+      return {
+        ...state,
+        project: { ...state.project, scripts },
+        dirty: true
+      };
+    }
+
+    case 'RENAME_SCRIPT_FILE': {
+      const scripts = (state.project.scripts || []).map(s =>
+        s.key === action.oldKey ? { key: action.newKey, filename: action.newKey + '.js' } : s
+      );
+      return {
+        ...state,
+        project: { ...state.project, scripts },
         dirty: true
       };
     }

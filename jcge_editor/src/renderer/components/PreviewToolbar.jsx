@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useProject, useProjectDispatch } from '../store/ProjectContext';
+import { useProject, useProjectDispatch, getSelectedScene } from '../store/ProjectContext';
 import NewProjectModal from './NewProjectModal';
 
 export default function PreviewToolbar() {
@@ -14,8 +14,58 @@ export default function PreviewToolbar() {
     }
   };
 
-  const handlePlay = () => {
+  const handlePlay = async () => {
     dispatch({ type: 'SET_PREVIEW_MODE', mode: 'play' });
+
+    // Load custom script files into preview iframe before scene scripts
+    if (state.project && state.project.filePath && state.project.scripts && state.project.scripts.length > 0) {
+      try {
+        const dir = state.project.filePath.replace(/[/\\][^/\\]+$/, '');
+        const customScripts = [];
+        for (const s of state.project.scripts) {
+          const filePath = await window.electronAPI.pathJoin(dir, 'scripts', s.filename);
+          if (await window.electronAPI.fileExists(filePath)) {
+            const content = await window.electronAPI.readFile(filePath);
+            customScripts.push({ filename: s.filename, content });
+          }
+        }
+        if (customScripts.length > 0) {
+          sendToPreview('loadCustomScripts', { scripts: customScripts });
+        }
+      } catch (err) {
+        console.error('Failed to load custom scripts:', err);
+      }
+    }
+
+    // Build audio cache from project audio assets
+    if (state.project && state.project.filePath &&
+        state.project.assets && state.project.assets.audio &&
+        state.project.assets.audio.length > 0) {
+      try {
+        const dir = state.project.filePath.replace(/[/\\][^/\\]+$/, '');
+        const audioCache = {};
+        for (const asset of state.project.assets.audio) {
+          const filePath = await window.electronAPI.pathJoin(dir, 'assets', 'audio', asset.filename);
+          if (await window.electronAPI.fileExists(filePath)) {
+            const base64 = await window.electronAPI.readFileBase64(filePath);
+            const ext = asset.filename.split('.').pop().toLowerCase();
+            const mime = ext === 'mp3' ? 'audio/mpeg' : ext === 'ogg' ? 'audio/ogg' : 'audio/wav';
+            audioCache['assets/audio/' + asset.filename] = 'data:' + mime + ';base64,' + base64;
+          }
+        }
+        if (Object.keys(audioCache).length > 0) {
+          sendToPreview('loadAudioCache', { audioCache });
+        }
+      } catch (err) {
+        console.error('Failed to build audio cache:', err);
+      }
+    }
+
+    // Send user script to preview before playing
+    const scene = getSelectedScene(state);
+    if (scene && scene.script) {
+      sendToPreview('loadScript', { script: scene.script });
+    }
     sendToPreview('play');
   };
 

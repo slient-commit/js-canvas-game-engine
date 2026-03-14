@@ -38,7 +38,7 @@ html, body, #root {
 .editor-layout {
   display: grid;
   grid-template-columns: 220px 1fr 280px;
-  grid-template-rows: 40px 1fr 160px;
+  grid-template-rows: 40px 1fr 220px;
   grid-template-areas:
     "toolbar toolbar toolbar"
     "left center right"
@@ -68,10 +68,30 @@ html, body, #root {
   grid-area: center;
   background: var(--bg-primary);
   display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+.center-panel-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.center-panel-content {
+  flex: 1;
+  display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  position: relative;
+  min-height: 0;
+}
+.center-panel-content > .script-editor,
+.center-panel-content > .file-editor {
+  width: 100%;
+  align-self: stretch;
 }
 
 .right-panel {
@@ -83,7 +103,21 @@ html, body, #root {
 .bottom-panel {
   grid-area: bottom;
   background: var(--bg-secondary);
-  overflow-y: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.bottom-panel-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.bottom-panel-content {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
 }
 
 /* ── Panel Headers ── */
@@ -405,4 +439,208 @@ html, body, #root {
   gap: 8px;
   padding: 20px;
   text-align: center;
+}
+
+/* ── Script Editor ── */
+.script-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.script-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.script-scene-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.script-hook-tabs {
+  display: flex;
+  gap: 4px;
+}
+.script-error-bar {
+  padding: 4px 8px;
+  background: rgba(243, 139, 168, 0.15);
+  color: var(--danger);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  border-bottom: 1px solid var(--danger);
+  flex-shrink: 0;
+}
+.script-error-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--danger);
+  margin-left: 4px;
+  vertical-align: middle;
+}
+.script-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+.script-textarea {
+  flex: 1;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: none;
+  border-right: 1px solid var(--border);
+  padding: 8px 12px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  resize: none;
+  outline: none;
+  tab-size: 2;
+  white-space: pre;
+  overflow: auto;
+}
+.script-textarea:focus {
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.script-textarea::placeholder {
+  color: var(--text-muted);
+}
+.script-helpers {
+  width: 160px;
+  background: var(--bg-secondary);
+  overflow-y: auto;
+  padding: 6px;
+  flex-shrink: 0;
+}
+.script-helpers-title {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 4px;
+}
+.script-obj-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 2px 4px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  text-align: left;
+  cursor: pointer;
+}
+.script-obj-btn:hover {
+  background: var(--bg-hover);
+}
+.script-obj-type {
+  font-size: 9px;
+  padding: 0 3px;
+  border-radius: 2px;
+  background: var(--bg-active);
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.script-snippet-btn {
+  display: block;
+  width: 100%;
+  padding: 3px 4px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--accent);
+  font-size: 10px;
+  text-align: left;
+  cursor: pointer;
+}
+.script-snippet-btn:hover {
+  background: var(--bg-hover);
+}
+
+/* ── File Editor ── */
+.file-editor {
+  display: flex;
+  height: 100%;
+}
+.file-list {
+  width: 180px;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+.file-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+}
+.file-list-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.1s;
+  user-select: none;
+}
+.file-list-item:hover {
+  background: var(--bg-hover);
+}
+.file-list-item.active {
+  background: var(--bg-active);
+  color: var(--accent);
+}
+.file-list-icon {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 2px;
+  background: var(--warning);
+  color: var(--bg-primary);
+  flex-shrink: 0;
+}
+.file-list-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.file-list-delete {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+.file-list-item:hover .file-list-delete {
+  opacity: 1;
+}
+.file-list-delete:hover {
+  color: var(--danger);
+}
+.file-editor-area {
+  flex: 1;
+  display: flex;
+  min-width: 0;
 }

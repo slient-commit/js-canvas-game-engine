@@ -112,6 +112,18 @@ class Scene {
     }
 
     /**
+     * Reset scene so OnCreate runs again on next entry
+     */
+    reset() {
+        this.layers = [];
+        this.gameObjects = [];
+        this.currentCamera = null;
+        this.isCreated = false;
+        this.isEnded = false;
+        this.registerLayer(new Layer('ground'));
+    }
+
+    /**
      * Set the scene to created
      */
     created() { this.isCreated = true; }

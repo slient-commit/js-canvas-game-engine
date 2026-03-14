@@ -68,7 +68,7 @@ class Engine {
      * Create intro scene for the engine
      */
     addIntroScene() {
-        this.registerScene(new IntroScene(this));
+        this.scenes.unshift(new IntroScene(this));
     }
 
     /**
@@ -309,6 +309,7 @@ class Engine {
             if (this.currentScene !== null) {
                 this.currentScene.ended();
             }
+            scene.reset();
             this.currentScene = scene;
             return true;
         }
@@ -615,6 +616,7 @@ class Engine {
             if (this.currentScene) {
                 this.currentScene.ended();
             }
+            t.newScene.reset();
             this.currentScene = t.newScene;
             t.phase = 'in';
             t.elapsed = 0;

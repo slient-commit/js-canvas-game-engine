@@ -35,9 +35,29 @@ function registerExportHandlers() {
       copyDirRecursive(projectAssetsDir, path.join(outputPath, 'assets'));
     }
 
+    // 3b. Copy custom script files
+    if (projectData.scripts && projectData.scripts.length > 0) {
+      const scriptsOutDir = path.join(outputPath, 'scripts');
+      if (!fs.existsSync(scriptsOutDir)) {
+        fs.mkdirSync(scriptsOutDir, { recursive: true });
+      }
+      for (const s of projectData.scripts) {
+        const srcFile = path.join(projectDir, 'scripts', s.filename);
+        if (fs.existsSync(srcFile)) {
+          fs.copyFileSync(srcFile, path.join(scriptsOutDir, s.filename));
+        }
+      }
+    }
+
     // 4. Generate game.js
     const gameJs = generateGameJs(projectData);
     fs.writeFileSync(path.join(outputPath, 'game.js'), gameJs, 'utf-8');
+
+    // 4b. Generate _sounds.js (base64 audio cache)
+    const soundsJs = generateSoundsJs(projectDir);
+    if (soundsJs) {
+      fs.writeFileSync(path.join(outputPath, '_sounds.js'), soundsJs, 'utf-8');
+    }
 
     // 5. Generate index.html
     const indexHtml = generateIndexHtml(projectData);
@@ -72,6 +92,19 @@ function generateIndexHtml(project) {
   const h = settings.canvasHeight || 540;
   const bg = settings.backgroundColor || '#0a0a1a';
 
+  // Build loader file list (_sounds.js + custom scripts + game.js)
+  let loaderFiles = '';
+  const hasAudio = project.assets && project.assets.audio && project.assets.audio.length > 0;
+  if (hasAudio) {
+    loaderFiles += `\n      { name: "_sounds", path: "_sounds.js" },`;
+  }
+  if (project.scripts && project.scripts.length > 0) {
+    for (const s of project.scripts) {
+      loaderFiles += `\n      { name: "${s.filename}", path: "scripts/${s.filename}" },`;
+    }
+  }
+  loaderFiles += `\n      { name: "game", path: "game.js" }`;
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -87,7 +120,11 @@ function generateIndexHtml(project) {
 <body>
   <canvas id="gameCanvas" width="${w}" height="${h}"></canvas>
   <script src="engine/engine-core.js"></script>
-  <script src="game.js"></script>
+  <script src="engine/game-loader.js"></script>
+  <script>
+    loader([${loaderFiles}
+    ]);
+  </script>
 </body>
 </html>`;
 }
@@ -102,19 +139,15 @@ function generateGameJs(project) {
     code += generateSceneClass(scene, settings) + '\n\n';
   }
 
-  // Generate bootstrap
+  // Generate bootstrap (gameReady fires after loader() loads all scripts)
   code += `// ── Engine Bootstrap ──\n`;
-  code += `window.addEventListener('engineReady', function() {\n`;
+  code += `window.addEventListener('gameReady', function() {\n`;
   code += `  var canvas = document.getElementById('gameCanvas');\n`;
   code += `  var engine = new Engine(canvas);\n`;
   code += `  engine.setCanvasSize(${settings.canvasWidth || 960}, ${settings.canvasHeight || 540});\n`;
 
   if (settings.displayFPS) {
     code += `  engine.displayFPS = true;\n`;
-  }
-
-  if (settings.jumpEngineIntro) {
-    code += `  engine.jumpEngineIntro = true;\n`;
   }
 
   // Register scenes
@@ -133,6 +166,7 @@ function generateSceneClass(scene, settings) {
   const className = sanitizeClassName(scene.name);
   let code = `class ${className} extends Scene {\n`;
   code += `  OnCreate() {\n`;
+  code += `    var engine = this.engine;\n`;
 
   // Camera
   if (scene.camera) {
@@ -160,6 +194,7 @@ function generateSceneClass(scene, settings) {
 
     if (layer.isUI) {
       code += `    var ${layerVar} = new UILayer('${layer.name}');\n`;
+      code += `    this.registerLayer(${layerVar});\n`;
     } else if (i === 0 && layer.name === 'ground') {
       // ground layer is created by default
       code += `    var ${layerVar} = this.layers[0].layer;\n`;
@@ -185,11 +220,43 @@ function generateSceneClass(scene, settings) {
     code += '\n';
   }
 
+  // User onCreate script (runs after visual setup)
+  if (scene.script && scene.script.onCreate && scene.script.onCreate.trim()) {
+    code += `    // -- User script (onCreate) --\n`;
+    code += `    ${scene.script.onCreate.split('\n').join('\n    ')}\n`;
+  }
+
   code += `  }\n\n`;
+
+  // findByName helper
+  code += `  findByName(name) {\n`;
+  code += `    for (var i = 0; i < this.layers.length; i++) {\n`;
+  code += `      var layer = this.layers[i].layer;\n`;
+  code += `      for (var j = 0; j < layer.gameObjects.length; j++) {\n`;
+  code += `        if (layer.gameObjects[j].name === name) return layer.gameObjects[j];\n`;
+  code += `      }\n`;
+  code += `      for (var j = 0; j < layer.elements.length; j++) {\n`;
+  code += `        if (layer.elements[j].name === name) return layer.elements[j];\n`;
+  code += `      }\n`;
+  code += `    }\n`;
+  code += `    return null;\n`;
+  code += `  }\n\n`;
+
   code += `  OnUpdate(elapsedTime) {\n`;
+  code += `    var engine = this.engine;\n`;
+  if (scene.script && scene.script.onUpdate && scene.script.onUpdate.trim()) {
+    code += `    // -- User script --\n`;
+    code += `    ${scene.script.onUpdate.split('\n').join('\n    ')}\n`;
+  }
   code += `    return true;\n`;
   code += `  }\n\n`;
+
   code += `  OnDestroy() {\n`;
+  code += `    var engine = this.engine;\n`;
+  if (scene.script && scene.script.onDestroy && scene.script.onDestroy.trim()) {
+    code += `    // -- User script --\n`;
+    code += `    ${scene.script.onDestroy.split('\n').join('\n    ')}\n`;
+  }
   code += `    return true;\n`;
   code += `  }\n`;
   code += `}\n`;
@@ -263,6 +330,28 @@ function sanitizeClassName(name) {
 
 function sanitizeVarName(name) {
   return name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+}
+
+function generateSoundsJs(projectDir) {
+  const audioDir = path.join(projectDir, 'assets', 'audio');
+  if (!fs.existsSync(audioDir)) return null;
+
+  const files = fs.readdirSync(audioDir).filter(f => /\.(mp3|wav|ogg)$/i.test(f));
+  if (files.length === 0) return null;
+
+  const mimeMap = { 'mp3': 'audio/mpeg', 'wav': 'audio/wav', 'ogg': 'audio/ogg' };
+
+  let entries = '';
+  for (const filename of files) {
+    const filePath = path.join(audioDir, filename);
+    const buf = fs.readFileSync(filePath);
+    const base64 = buf.toString('base64');
+    const ext = filename.split('.').pop().toLowerCase();
+    const mime = mimeMap[ext] || 'audio/mpeg';
+    entries += `  'assets/audio/${filename}': 'data:${mime};base64,${base64}',\n`;
+  }
+
+  return `// Audio cache generated by JCGE Editor\nvar AUDIO_CACHE = {\n${entries}};\n\n(function() {\n  var _OrigAudio = window.Audio;\n  window.Audio = function(src) {\n    return new _OrigAudio((AUDIO_CACHE && AUDIO_CACHE[src]) ? AUDIO_CACHE[src] : src);\n  };\n  window.Audio.prototype = _OrigAudio.prototype;\n})();\n`;
 }
 
 module.exports = { registerExportHandlers };

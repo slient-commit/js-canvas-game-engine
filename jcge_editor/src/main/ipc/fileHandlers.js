@@ -82,6 +82,11 @@ function registerFileHandlers() {
     return { filename, path: destPath };
   });
 
+  ipcMain.handle('read-file-base64', async (event, filePath) => {
+    const buf = fs.readFileSync(filePath);
+    return buf.toString('base64');
+  });
+
   ipcMain.handle('delete-asset', async (event, filePath) => {
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);

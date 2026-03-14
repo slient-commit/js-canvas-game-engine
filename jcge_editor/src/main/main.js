@@ -1,7 +1,6 @@
-const { app, BrowserWindow, ipcMain, protocol, net } = require('electron');
+const { app, BrowserWindow, ipcMain, protocol } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { pathToFileURL } = require('url');
 const { registerFileHandlers } = require('./ipc/fileHandlers');
 const { registerExportHandlers } = require('./ipc/exportHandlers');
 
@@ -52,17 +51,24 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  // MIME types for common file extensions
+  const MIME_TYPES = {
+    '.html': 'text/html', '.css': 'text/css', '.js': 'application/javascript',
+    '.json': 'application/json', '.png': 'image/png', '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.bmp': 'image/bmp',
+    '.webp': 'image/webp', '.svg': 'image/svg+xml',
+    '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.ogg': 'audio/ogg',
+    '.mp4': 'video/mp4', '.webm': 'video/webm'
+  };
+
   // Register jcge:// protocol handler for serving project files
   protocol.handle('jcge', (request) => {
     try {
       const url = new URL(request.url);
-      // hostname is 'local' (used to preserve drive letter on Windows)
       let filePath = decodeURIComponent(url.pathname);
-      // On Windows, pathname starts with / before drive letter (e.g. /C:/path)
       if (process.platform === 'win32' && filePath.startsWith('/')) {
         filePath = filePath.slice(1);
       }
-      // Skip empty or directory requests
       if (!filePath || filePath.endsWith('/')) {
         return new Response('Not found', { status: 404 });
       }
@@ -70,7 +76,50 @@ app.whenReady().then(() => {
         console.warn('[jcge://] File not found:', filePath);
         return new Response('Not found', { status: 404 });
       }
-      return net.fetch(pathToFileURL(filePath).href);
+
+      const ext = path.extname(filePath).toLowerCase();
+      const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+      const stat = fs.statSync(filePath);
+      const fileSize = stat.size;
+
+      // Handle range requests (required for audio/video seeking)
+      const rangeHeader = request.headers.get('range');
+      if (rangeHeader) {
+        const match = rangeHeader.match(/bytes=(\d+)-(\d*)/);
+        if (match) {
+          const start = parseInt(match[1], 10);
+          const end = match[2] ? parseInt(match[2], 10) : fileSize - 1;
+          const chunkSize = end - start + 1;
+          const stream = fs.createReadStream(filePath, { start, end });
+          const readable = new ReadableStream({
+            start(controller) {
+              stream.on('data', (chunk) => controller.enqueue(chunk));
+              stream.on('end', () => controller.close());
+              stream.on('error', (err) => controller.error(err));
+            }
+          });
+          return new Response(readable, {
+            status: 206,
+            headers: {
+              'Content-Type': contentType,
+              'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+              'Content-Length': String(chunkSize),
+              'Accept-Ranges': 'bytes'
+            }
+          });
+        }
+      }
+
+      // Full file response
+      const buffer = fs.readFileSync(filePath);
+      return new Response(buffer, {
+        status: 200,
+        headers: {
+          'Content-Type': contentType,
+          'Content-Length': String(fileSize),
+          'Accept-Ranges': 'bytes'
+        }
+      });
     } catch (err) {
       console.error('[jcge://] Error handling request:', request.url, err);
       return new Response('Internal error', { status: 500 });
