@@ -11,6 +11,8 @@ class GameObject {
         this.isStatic = false;
         this.animations = new Animation();
         this.hasSimpleSprite = true;
+        this._attachParent = null;
+        this._attachOffset = null;
     }
 
     /**
@@ -131,6 +133,38 @@ class GameObject {
     }
 
     /**
+     * Attach this object to a parent object with an offset.
+     * The engine will auto-update this object's position each frame.
+     * @param {GameObject|Element} parent
+     * @param {number} offsetX
+     * @param {number} offsetY
+     */
+    attachTo(parent, offsetX, offsetY) {
+        this._attachParent = parent;
+        this._attachOffset = new Vec2(offsetX || 0, offsetY || 0);
+    }
+
+    /**
+     * Detach this object from its parent
+     */
+    detach() {
+        this._attachParent = null;
+        this._attachOffset = null;
+    }
+
+    /**
+     * Update position based on parent attachment
+     */
+    updateAttachment() {
+        if (this._attachParent) {
+            this.position = new Position(
+                this._attachParent.position.X + this._attachOffset.X,
+                this._attachParent.position.Y + this._attachOffset.Y
+            );
+        }
+    }
+
+    /**
      * Serialize game object to a plain object
      * @returns {Object}
      */
@@ -148,6 +182,11 @@ class GameObject {
             sprite: this.sprite ? this.sprite.toJSON() : null,
             animations: []
         };
+
+        if (this._attachParent) {
+            data.parentId = this._attachParent.id;
+            data.attachOffset = { X: this._attachOffset.X, Y: this._attachOffset.Y };
+        }
 
         if (this.animations && this.animations.animations) {
             for (var i = 0; i < this.animations.animations.length; i++) {
@@ -177,6 +216,11 @@ class GameObject {
         obj.showIt = data.showIt !== undefined ? data.showIt : true;
         obj.isStatic = data.isStatic || false;
         obj.hasSimpleSprite = data.hasSimpleSprite !== undefined ? data.hasSimpleSprite : true;
+
+        if (data.parentId) {
+            obj._pendingParentId = data.parentId;
+            obj._pendingAttachOffset = data.attachOffset || { X: 0, Y: 0 };
+        }
 
         if (data.animations && data.animations.length > 0) {
             var animation = new Animation();

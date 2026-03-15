@@ -47,6 +47,7 @@ const initialState = {
   selectedObjectType: null, // 'gameobject' | 'element' | 'layer' | 'scene' | 'camera'
   enginePath: null,
   previewMode: 'edit', // 'edit' | 'play'
+  reloadKey: 0,
   undoStack: [],
   redoStack: []
 };
@@ -80,6 +81,24 @@ function projectReducer(state, action) {
           ? project.scenes[0].layers[0].id : null,
         selectedObjectId: null,
         selectedObjectType: null,
+        undoStack: [],
+        redoStack: []
+      };
+    }
+
+    case 'RELOAD_PROJECT': {
+      const project = action.project;
+      return {
+        ...state,
+        project,
+        dirty: false,
+        reloadKey: (state.reloadKey || 0) + 1,
+        selectedSceneId: project.scenes.length > 0 ? project.scenes[0].id : null,
+        selectedLayerId: project.scenes.length > 0 && project.scenes[0].layers.length > 0
+          ? project.scenes[0].layers[0].id : null,
+        selectedObjectId: null,
+        selectedObjectType: null,
+        previewMode: 'edit',
         undoStack: [],
         redoStack: []
       };
@@ -194,6 +213,17 @@ function projectReducer(state, action) {
       };
     }
 
+    case 'UPDATE_SCENE_BGCOLOR': {
+      const scenes = state.project.scenes.map(s =>
+        s.id === state.selectedSceneId ? { ...s, backgroundColor: action.color } : s
+      );
+      return {
+        ...state,
+        project: { ...state.project, scenes },
+        dirty: true
+      };
+    }
+
     // ── Layer mutations ──
     case 'ADD_LAYER': {
       const scenes = state.project.scenes.map(s => {
@@ -267,12 +297,14 @@ function projectReducer(state, action) {
     }
 
     case 'REMOVE_OBJECT': {
+      const deletedId = action.id;
+      const clearParent = o => o.parentId === deletedId ? { ...o, parentId: null, attachOffset: null } : o;
       const scenes = state.project.scenes.map(s => {
         if (s.id !== state.selectedSceneId) return s;
         const layers = s.layers.map(l => ({
           ...l,
-          gameObjects: l.gameObjects.filter(o => o.id !== action.id),
-          elements: l.elements.filter(o => o.id !== action.id)
+          gameObjects: l.gameObjects.filter(o => o.id !== deletedId).map(clearParent),
+          elements: l.elements.filter(o => o.id !== deletedId).map(clearParent)
         }));
         return { ...s, layers };
       });
@@ -299,6 +331,52 @@ function projectReducer(state, action) {
         }));
         return { ...s, layers };
       });
+      return {
+        ...state,
+        project: { ...state.project, scenes },
+        dirty: true
+      };
+    }
+
+    case 'UPDATE_PIVOT': {
+      const scenes = state.project.scenes.map(s => {
+        if (s.id !== state.selectedSceneId) return s;
+        const updateObj = (o) => {
+          if (o.id !== action.id || !o.sprite) return o;
+          // Atlas: update pivot on the specific region
+          if (action.regionName && o.sprite.regions) {
+            const regions = { ...o.sprite.regions };
+            if (regions[action.regionName]) {
+              regions[action.regionName] = {
+                ...regions[action.regionName],
+                pivotX: action.pivotX,
+                pivotY: action.pivotY
+              };
+            }
+            return { ...o, sprite: { ...o.sprite, regions } };
+          }
+          // Sprite / SpriteSheet: update pivot on the sprite itself
+          return { ...o, sprite: { ...o.sprite, pivotX: action.pivotX, pivotY: action.pivotY } };
+        };
+        const layers = s.layers.map(l => ({
+          ...l,
+          gameObjects: l.gameObjects.map(updateObj),
+          elements: l.elements.map(updateObj)
+        }));
+        return { ...s, layers };
+      });
+      return {
+        ...state,
+        project: { ...state.project, scenes },
+        dirty: true
+      };
+    }
+
+    // ── Scene Lighting ──
+    case 'UPDATE_SCENE_LIGHTING': {
+      const scenes = state.project.scenes.map(s =>
+        s.id === state.selectedSceneId ? { ...s, lighting: action.lighting } : s
+      );
       return {
         ...state,
         project: { ...state.project, scenes },
@@ -375,6 +453,78 @@ function projectReducer(state, action) {
       return {
         ...state,
         project: { ...state.project, assets },
+        dirty: true
+      };
+    }
+
+    case 'RENAME_ASSET': {
+      const { category, oldKey, newKey, newFilename } = action;
+      const assets = { ...state.project.assets };
+      assets[category] = assets[category].map(a =>
+        a.key === oldKey ? { key: newKey, filename: newFilename } : a
+      );
+      // Update all sprite path references across scenes
+      const oldPath = 'assets/' + (category === 'audio' ? 'audio/' : 'sprites/') + action.oldFilename;
+      const newPath = 'assets/' + (category === 'audio' ? 'audio/' : 'sprites/') + newFilename;
+      const scenes = state.project.scenes.map(scene => ({
+        ...scene,
+        layers: scene.layers.map(layer => ({
+          ...layer,
+          gameObjects: (layer.gameObjects || []).map(obj => {
+            let changed = false;
+            const updated = { ...obj };
+            if (obj.sprite && obj.sprite.path === oldPath) {
+              updated.sprite = { ...obj.sprite, path: newPath };
+              changed = true;
+            }
+            if (obj.animations && obj.animations.length > 0) {
+              updated.animations = obj.animations.map(a =>
+                a.path === oldPath ? { ...a, path: newPath } : a
+              );
+              if (JSON.stringify(updated.animations) !== JSON.stringify(obj.animations)) changed = true;
+            }
+            return changed ? updated : obj;
+          }),
+          elements: (layer.elements || []).map(el => {
+            if (el.sprite && el.sprite.path === oldPath) {
+              return { ...el, sprite: { ...el.sprite, path: newPath } };
+            }
+            return el;
+          })
+        }))
+      }));
+      return {
+        ...state,
+        project: { ...state.project, assets, scenes },
+        dirty: true
+      };
+    }
+
+    // ── Isometric Map ──
+    case 'UPDATE_ISOMETRIC_MAP': {
+      const scenes = state.project.scenes.map(s =>
+        s.id === state.selectedSceneId ? { ...s, isometricMap: action.isometricMap } : s
+      );
+      return {
+        ...state,
+        project: { ...state.project, scenes },
+        dirty: true
+      };
+    }
+
+    case 'UPDATE_ISO_TILE': {
+      const { col, row, property, value } = action;
+      const scenes = state.project.scenes.map(s => {
+        if (s.id !== state.selectedSceneId || !s.isometricMap) return s;
+        const iso = { ...s.isometricMap };
+        const arr = iso[property].map(r => [...r]);
+        arr[row][col] = value;
+        iso[property] = arr;
+        return { ...s, isometricMap: iso };
+      });
+      return {
+        ...state,
+        project: { ...state.project, scenes },
         dirty: true
       };
     }

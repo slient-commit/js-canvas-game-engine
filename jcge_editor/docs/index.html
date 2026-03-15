@@ -309,6 +309,11 @@
     <a href="#uilabel" class="sub">UILabel</a>
     <a href="#uibutton" class="sub">UIButton</a>
     <a href="#uipanel" class="sub">UIPanel</a>
+    <a href="#uicircle" class="sub">UICircle</a>
+    <a href="#rectangle-shape" class="sub">Rectangle</a>
+    <a href="#circle-shape" class="sub">Circle</a>
+
+    <a href="#attachments" class="section-link">Attachments</a>
 
     <a href="#cameras" class="section-link">Cameras</a>
     <a href="#fixed-camera" class="sub">Fixed Camera</a>
@@ -576,6 +581,55 @@ uiLayer.registerElement(btn);</code></pre>
   borderWidth: <span class="num">2</span>
 });
 uiLayer.registerElement(panel);</code></pre>
+
+<h3 id="uicircle">UICircle</h3>
+<p>A circle shape element for drawing filled or outlined circles.</p>
+<pre><code><span class="kw">var</span> circle = <span class="kw">new</span> <span class="ty">UICircle</span>(<span class="kw">new</span> <span class="ty">Vec2</span>(<span class="num">100</span>, <span class="num">100</span>), {
+  radius: <span class="num">30</span>,
+  fillColor: <span class="str">'#3498db'</span>,
+  borderColor: <span class="str">'#2980b9'</span>,
+  borderWidth: <span class="num">2</span>
+});
+layer.registerElement(circle);</code></pre>
+
+<h3 id="rectangle-shape">Rectangle (Shape)</h3>
+<p>In the editor, use the <strong>Rectangle</strong> object type to place colored rectangles on any layer. These are exported as <code>UIPanel</code> instances at build time.</p>
+
+<h3 id="circle-shape">Circle (Shape)</h3>
+<p>In the editor, use the <strong>Circle</strong> object type to place circles on any layer. These are exported as <code>UICircle</code> instances at build time.</p>
+
+<div class="callout">
+  <strong>Visual Editing:</strong> All UI elements (Label, Button, Panel) and shape primitives (Rectangle, Circle) render visually on the editor canvas in edit mode. Select them to see their bounding box, drag to reposition, and edit their properties in the Properties panel.
+</div>
+
+<!-- ══════════════════════════════════════════════ -->
+<h2 id="attachments">Parent-Child Attachments</h2>
+<p>Attach any object (GameObject or Element) to a <strong>parent</strong> so it automatically follows the parent's position with an X/Y offset. This is useful for turrets on vehicles, HP bars above characters, weapon attachments, etc.</p>
+
+<h3>Using in the Editor</h3>
+<ol>
+  <li>Create the parent object (e.g. tank body) and one or more child objects (e.g. turret, HP bar)</li>
+  <li>Select the <strong>child</strong> object</li>
+  <li>In the <strong>Properties Panel</strong>, find the <strong>Attachment</strong> section</li>
+  <li>Choose the parent from the <strong>Parent</strong> dropdown &mdash; the offset is auto-calculated from current positions</li>
+  <li>Adjust <strong>Offset X</strong> / <strong>Offset Y</strong> manually if needed</li>
+</ol>
+
+<div class="callout">
+  <strong>Visual feedback:</strong> A yellow dashed line connects child to parent in edit mode. Child objects show a <strong>&crarr;</strong> indicator in the Scene Hierarchy. Dragging a child updates its offset relative to the parent.
+</div>
+
+<h3>Using in Code</h3>
+<pre><code><span class="cm">// Turret follows tank body</span>
+turret.<span class="fn">attachTo</span>(tankBody, <span class="num">10</span>, <span class="num">-15</span>);
+
+<span class="cm">// HP bar follows player</span>
+hpBar.<span class="fn">attachTo</span>(player, <span class="num">0</span>, <span class="num">-20</span>);
+
+<span class="cm">// Detach later</span>
+turret.<span class="fn">detach</span>();</code></pre>
+
+<p>The engine auto-updates child positions each frame before rendering. Works across layers &mdash; a UI element can follow a game object in a different layer.</p>
 
 <!-- ══════════════════════════════════════════════ -->
 <h2 id="cameras">Cameras</h2>

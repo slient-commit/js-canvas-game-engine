@@ -384,6 +384,56 @@ class Drawer {
     }
 
     /**
+     * Draw a triangle
+     * @param {Position} position - Top-left of bounding box
+     * @param {Size} size - Bounding box size
+     * @param {boolean} filled
+     * @param {Int} lineWidth
+     * @param {String} color
+     * @param {Number} opacity
+     * @param {Camera} camera
+     * @returns {boolean}
+     */
+    triangle(position, size, filled = true, lineWidth = 1, color = 'red', opacity = 1, camera = null) {
+        this.ctx.strokeStyle = color;
+        this.ctx.fillStyle = color;
+        this.ctx.lineWidth = lineWidth;
+        this.ctx.globalAlpha = opacity;
+
+        var px = position.X;
+        var py = position.Y;
+        var w = size.width;
+        var h = size.height;
+
+        if (camera !== null) {
+            camera.updateMaxPosition();
+            if (px >= camera.position.X && py >= camera.position.Y && px <= camera.maxPosition.X && py <= camera.maxPosition.Y) {
+                if (camera.addOffset) {
+                    px += camera.offset.X;
+                    py += camera.offset.Y;
+                }
+            } else {
+                this.ctx.globalAlpha = 1.0;
+                return false;
+            }
+        }
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + w / 2, py);          // top center
+        this.ctx.lineTo(px + w, py + h);           // bottom right
+        this.ctx.lineTo(px, py + h);               // bottom left
+        this.ctx.closePath();
+
+        if (filled) {
+            this.ctx.fill();
+        } else {
+            this.ctx.stroke();
+        }
+        this.ctx.globalAlpha = 1.0;
+        return true;
+    }
+
+    /**
      * Color a gredient Regtangle
      * @param {Position} position 
      * @param {Size} size 

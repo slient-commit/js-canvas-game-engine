@@ -6,6 +6,9 @@ export default function AssetManager() {
   const dispatch = useProjectDispatch();
   const [playingKey, setPlayingKey] = useState(null);
   const audioRef = useRef(null);
+  const [editingAsset, setEditingAsset] = useState(null); // { key, category }
+  const [editName, setEditName] = useState('');
+  const editInputRef = useRef(null);
 
   if (!state.project) {
     return (
@@ -99,6 +102,94 @@ export default function AssetManager() {
     }
   };
 
+  const startRename = (asset, category) => {
+    const nameWithoutExt = asset.filename.replace(/\.[^.]+$/, '');
+    setEditingAsset({ key: asset.key, category });
+    setEditName(nameWithoutExt);
+    setTimeout(() => {
+      if (editInputRef.current) {
+        editInputRef.current.focus();
+        editInputRef.current.select();
+      }
+    }, 0);
+  };
+
+  const commitRename = async () => {
+    if (!editingAsset) return;
+    const { key, category } = editingAsset;
+    const assets = category === 'audio' ? (state.project.assets.audio || []) : (state.project.assets.sprites || []);
+    const asset = assets.find(a => a.key === key);
+    if (!asset) { setEditingAsset(null); return; }
+
+    const ext = asset.filename.split('.').pop();
+    const trimmed = editName.trim();
+    if (!trimmed || trimmed === asset.filename.replace(/\.[^.]+$/, '')) {
+      setEditingAsset(null);
+      return;
+    }
+
+    // Validate: alphanumeric, underscore, hyphen, dot only
+    if (!/^[a-zA-Z0-9_\-\.]+$/.test(trimmed)) {
+      await window.electronAPI.showMessageBox({
+        type: 'warning', title: 'Invalid Name',
+        message: 'Asset name can only contain letters, numbers, underscores, hyphens, and dots.'
+      });
+      return;
+    }
+
+    const newFilename = trimmed + '.' + ext;
+    const newKey = trimmed;
+
+    // Check for duplicate name
+    if (assets.some(a => a.key !== key && a.filename === newFilename)) {
+      await window.electronAPI.showMessageBox({
+        type: 'warning', title: 'Duplicate Name',
+        message: 'An asset with that name already exists.'
+      });
+      return;
+    }
+
+    try {
+      // Rename file on disk
+      const projectDir = state.project.filePath.replace(/[/\\][^/\\]+$/, '');
+      const subDir = category === 'audio' ? 'audio' : 'sprites';
+      const oldPath = await window.electronAPI.pathJoin(projectDir, 'assets', subDir, asset.filename);
+      await window.electronAPI.renameAsset(oldPath, newFilename);
+
+      // Update project state and all references
+      dispatch({
+        type: 'RENAME_ASSET',
+        category,
+        oldKey: key,
+        oldFilename: asset.filename,
+        newKey,
+        newFilename
+      });
+    } catch (err) {
+      console.error('Rename failed:', err);
+      await window.electronAPI.showMessageBox({
+        type: 'error', title: 'Rename Failed',
+        message: err.message || 'Failed to rename asset.'
+      });
+    }
+
+    setEditingAsset(null);
+  };
+
+  const cancelRename = () => {
+    setEditingAsset(null);
+  };
+
+  const handleRenameKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      commitRename();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      cancelRename();
+    }
+  };
+
   const allSprites = state.project.assets.sprites || [];
   const allAudio = state.project.assets.audio || [];
 
@@ -116,7 +207,22 @@ export default function AssetManager() {
               alt={asset.key}
               onError={e => { e.target.style.display = 'none'; }}
             />
-            <div className="asset-name">{asset.filename}</div>
+            {editingAsset && editingAsset.key === asset.key ? (
+              <input
+                ref={editInputRef}
+                className="asset-rename-input"
+                value={editName}
+                onChange={e => setEditName(e.target.value)}
+                onBlur={commitRename}
+                onKeyDown={handleRenameKeyDown}
+              />
+            ) : (
+              <div
+                className="asset-name"
+                onDoubleClick={() => startRename(asset, 'sprites')}
+                title="Double-click to rename"
+              >{asset.filename}</div>
+            )}
           </div>
         ))}
         {allAudio.map(asset => (
@@ -124,18 +230,34 @@ export default function AssetManager() {
             key={asset.key}
             className={'asset-card' + (playingKey === asset.key ? ' audio-playing' : '')}
             title={asset.filename}
-            onClick={() => handlePlayAudio(asset)}
-            style={{ cursor: 'pointer' }}
           >
-            <div style={{
-              width: 48, height: 48,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: playingKey === asset.key ? 'var(--accent)' : 'var(--text-muted)',
-              fontSize: 20
-            }}>
+            <div
+              onClick={() => handlePlayAudio(asset)}
+              style={{
+                width: 48, height: 48, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: playingKey === asset.key ? 'var(--accent)' : 'var(--text-muted)',
+                fontSize: 20
+              }}
+            >
               {playingKey === asset.key ? '\u25A0' : '\u25B6'} {'\u266B'}
             </div>
-            <div className="asset-name">{asset.filename}</div>
+            {editingAsset && editingAsset.key === asset.key ? (
+              <input
+                ref={editInputRef}
+                className="asset-rename-input"
+                value={editName}
+                onChange={e => setEditName(e.target.value)}
+                onBlur={commitRename}
+                onKeyDown={handleRenameKeyDown}
+              />
+            ) : (
+              <div
+                className="asset-name"
+                onDoubleClick={() => startRename(asset, 'audio')}
+                title="Double-click to rename"
+              >{asset.filename}</div>
+            )}
           </div>
         ))}
         {allSprites.length === 0 && allAudio.length === 0 && (

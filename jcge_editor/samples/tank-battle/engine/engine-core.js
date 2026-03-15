@@ -168,6 +168,10 @@
             path: "ui/uiPanel.js"
         },
         {
+            name: "UICircle script",
+            path: "ui/uiCircle.js"
+        },
+        {
             name: "Scene script",
             path: "engine-parts/scene.js"
         },

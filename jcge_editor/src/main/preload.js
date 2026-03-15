@@ -33,6 +33,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   importAsset: (sourcePath, projectAssetsDir) =>
     ipcRenderer.invoke('import-asset', sourcePath, projectAssetsDir),
   readFileBase64: (filePath) => ipcRenderer.invoke('read-file-base64', filePath),
+  renameAsset: (oldPath, newFilename) => ipcRenderer.invoke('rename-asset', oldPath, newFilename),
   deleteAsset: (filePath) => ipcRenderer.invoke('delete-asset', filePath),
 
   // Window controls

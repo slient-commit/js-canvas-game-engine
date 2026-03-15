@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useProject, useProjectDispatch, getSelectedScene } from '../store/ProjectContext';
+import CodeEditor from './CodeEditor';
 
 const SNIPPETS = [
   {
@@ -58,12 +59,17 @@ sfx.play();`
   {
     label: 'Stop music',
     code: `engine.sound.stopMusic();`
+  },
+  {
+    label: 'Console log',
+    code: `game.log('value:', someVariable);`
   }
 ];
 
 const PLACEHOLDERS = {
   onUpdate: `// Called every frame. Use elapsedTime for smooth movement.
 // Available: this.findByName('Name'), engine.input, engine.sound, Sound, Collision
+// Debug: game.log('value', object) — outputs to the Console panel
 //
 // Example:
 // var player = this.findByName('Player');
@@ -79,28 +85,17 @@ export default function ScriptEditor({ scriptError }) {
   const state = useProject();
   const dispatch = useProjectDispatch();
   const [activeHook, setActiveHook] = useState('onUpdate');
-  const textareaRef = useRef(null);
+  const editorRef = useRef(null);
 
   const scene = getSelectedScene(state);
 
   const insertAtCursor = useCallback((text) => {
-    const ta = textareaRef.current;
-    if (!ta || !scene) return;
-    const start = ta.selectionStart;
-    const end = ta.selectionEnd;
-    const script = scene.script || { onUpdate: '', onCreate: '', onDestroy: '' };
-    const current = script[activeHook] || '';
-    const newVal = current.substring(0, start) + text + current.substring(end);
-    dispatch({
-      type: 'UPDATE_SCENE_SCRIPT',
-      sceneId: scene.id,
-      script: { [activeHook]: newVal }
-    });
-    requestAnimationFrame(() => {
-      ta.selectionStart = ta.selectionEnd = start + text.length;
-      ta.focus();
-    });
-  }, [scene, activeHook, dispatch]);
+    const editor = editorRef.current;
+    if (!editor || !editor.view || !scene) return;
+    const view = editor.view;
+    view.dispatch(view.state.replaceSelection(text));
+    view.focus();
+  }, [scene]);
 
   if (!scene) {
     return <div className="empty-state" style={{ padding: 12 }}>Select a scene to edit scripts</div>;
@@ -109,20 +104,14 @@ export default function ScriptEditor({ scriptError }) {
   const script = scene.script || { onUpdate: '', onCreate: '', onDestroy: '' };
   const code = script[activeHook] || '';
 
-  const handleChange = (e) => {
+  const handleChange = useCallback((newCode) => {
+    if (!scene) return;
     dispatch({
       type: 'UPDATE_SCENE_SCRIPT',
       sceneId: scene.id,
-      script: { [activeHook]: e.target.value }
+      script: { [activeHook]: newCode }
     });
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      insertAtCursor('  ');
-    }
-  };
+  }, [scene, activeHook, dispatch]);
 
   // Collect object names
   const objects = [];
@@ -159,14 +148,11 @@ export default function ScriptEditor({ scriptError }) {
         </div>
       )}
       <div className="script-body">
-        <textarea
-          ref={textareaRef}
-          className="script-textarea"
+        <CodeEditor
+          ref={editorRef}
           value={code}
           onChange={handleChange}
-          onKeyDown={handleKeyDown}
           placeholder={PLACEHOLDERS[activeHook]}
-          spellCheck={false}
         />
         <div className="script-helpers">
           <div className="script-helpers-title">Objects</div>

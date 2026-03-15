@@ -61,6 +61,9 @@ app.whenReady().then(() => {
     '.mp4': 'video/mp4', '.webm': 'video/webm'
   };
 
+  // Allowed file extensions for jcge:// protocol (project assets + engine)
+  const ALLOWED_EXTENSIONS = new Set(Object.keys(MIME_TYPES));
+
   // Register jcge:// protocol handler for serving project files
   protocol.handle('jcge', (request) => {
     try {
@@ -72,12 +75,22 @@ app.whenReady().then(() => {
       if (!filePath || filePath.endsWith('/')) {
         return new Response('Not found', { status: 404 });
       }
+
+      // Security: resolve to absolute path and block traversal
+      filePath = path.resolve(filePath);
+
+      // Security: only serve allowed file types
+      const ext = path.extname(filePath).toLowerCase();
+      if (!ALLOWED_EXTENSIONS.has(ext)) {
+        console.warn('[jcge://] Blocked disallowed extension:', ext, filePath);
+        return new Response('Forbidden', { status: 403 });
+      }
+
       if (!fs.existsSync(filePath)) {
         console.warn('[jcge://] File not found:', filePath);
         return new Response('Not found', { status: 404 });
       }
 
-      const ext = path.extname(filePath).toLowerCase();
       const contentType = MIME_TYPES[ext] || 'application/octet-stream';
       const stat = fs.statSync(filePath);
       const fileSize = stat.size;
@@ -104,7 +117,8 @@ app.whenReady().then(() => {
               'Content-Type': contentType,
               'Content-Range': `bytes ${start}-${end}/${fileSize}`,
               'Content-Length': String(chunkSize),
-              'Accept-Ranges': 'bytes'
+              'Accept-Ranges': 'bytes',
+              'Access-Control-Allow-Origin': '*'
             }
           });
         }
@@ -117,7 +131,8 @@ app.whenReady().then(() => {
         headers: {
           'Content-Type': contentType,
           'Content-Length': String(fileSize),
-          'Accept-Ranges': 'bytes'
+          'Accept-Ranges': 'bytes',
+          'Access-Control-Allow-Origin': '*'
         }
       });
     } catch (err) {

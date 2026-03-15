@@ -9,6 +9,8 @@ class Element {
         this.position = position;
         this.opacity = opacity;
         this.showIt = true;
+        this._attachParent = null;
+        this._attachOffset = null;
     }
 
     hide() {
@@ -20,11 +22,43 @@ class Element {
     }
 
     /**
+     * Attach this element to a parent object with an offset.
+     * The engine will auto-update this element's position each frame.
+     * @param {GameObject|Element} parent
+     * @param {number} offsetX
+     * @param {number} offsetY
+     */
+    attachTo(parent, offsetX, offsetY) {
+        this._attachParent = parent;
+        this._attachOffset = new Vec2(offsetX || 0, offsetY || 0);
+    }
+
+    /**
+     * Detach this element from its parent
+     */
+    detach() {
+        this._attachParent = null;
+        this._attachOffset = null;
+    }
+
+    /**
+     * Update position based on parent attachment
+     */
+    updateAttachment() {
+        if (this._attachParent) {
+            this.position = new Vec2(
+                this._attachParent.position.X + this._attachOffset.X,
+                this._attachParent.position.Y + this._attachOffset.Y
+            );
+        }
+    }
+
+    /**
      * Serialize element to a plain object
      * @returns {Object}
      */
     toJSON() {
-        return {
+        var data = {
             type: 'element',
             id: this.id,
             position: { X: this.position.X, Y: this.position.Y },
@@ -32,6 +66,13 @@ class Element {
             showIt: this.showIt,
             sprite: this.sprite ? this.sprite.toJSON() : null
         };
+
+        if (this._attachParent) {
+            data.parentId = this._attachParent.id;
+            data.attachOffset = { X: this._attachOffset.X, Y: this._attachOffset.Y };
+        }
+
+        return data;
     }
 
     /**
@@ -48,6 +89,12 @@ class Element {
         );
         element.id = data.id;
         element.showIt = data.showIt !== undefined ? data.showIt : true;
+
+        if (data.parentId) {
+            element._pendingParentId = data.parentId;
+            element._pendingAttachOffset = data.attachOffset || { X: 0, Y: 0 };
+        }
+
         return element;
     }
 }

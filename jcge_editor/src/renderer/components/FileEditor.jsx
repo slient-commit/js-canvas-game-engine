@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useProject, useProjectDispatch } from '../store/ProjectContext';
+import CodeEditor from './CodeEditor';
 
 export default function FileEditor() {
   const state = useProject();
@@ -10,7 +11,6 @@ export default function FileEditor() {
   const [newFileName, setNewFileName] = useState('');
   const [showNewInput, setShowNewInput] = useState(false);
   const saveTimerRef = useRef(null);
-  const textareaRef = useRef(null);
   const newInputRef = useRef(null);
 
   const project = state.project;
@@ -74,28 +74,11 @@ export default function FileEditor() {
     }
   }, [selectedKey, scripts, getFilePath]);
 
-  const handleChange = (e) => {
-    const text = e.target.value;
+  const handleChange = useCallback((text) => {
     setContent(text);
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => saveToFile(text), 500);
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      const ta = textareaRef.current;
-      const start = ta.selectionStart;
-      const end = ta.selectionEnd;
-      const newVal = content.substring(0, start) + '  ' + content.substring(end);
-      setContent(newVal);
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-      saveTimerRef.current = setTimeout(() => saveToFile(newVal), 500);
-      requestAnimationFrame(() => {
-        ta.selectionStart = ta.selectionEnd = start + 2;
-      });
-    }
-  };
+  }, [saveToFile]);
 
   const handleNewFileSubmit = async () => {
     const name = newFileName.trim();
@@ -231,14 +214,10 @@ export default function FileEditor() {
           loading ? (
             <div className="empty-state">Loading...</div>
           ) : (
-            <textarea
-              ref={textareaRef}
-              className="script-textarea"
+            <CodeEditor
               value={content}
               onChange={handleChange}
-              onKeyDown={handleKeyDown}
               placeholder="// Write your JavaScript code here..."
-              spellCheck={false}
             />
           )
         ) : (

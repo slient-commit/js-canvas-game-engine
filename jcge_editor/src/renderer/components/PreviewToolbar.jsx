@@ -2,6 +2,31 @@ import React, { useState } from 'react';
 import { useProject, useProjectDispatch, getSelectedScene } from '../store/ProjectContext';
 import NewProjectModal from './NewProjectModal';
 
+/** Validate that a filename is safe (no path traversal) */
+function isSafeFilename(name) {
+  if (!name || typeof name !== 'string') return false;
+  return /^[a-zA-Z0-9_\-\.]+$/.test(name) && !name.includes('..');
+}
+
+/** Basic schema validation for loaded .jcge project files */
+function validateProject(data) {
+  if (!data || typeof data !== 'object') throw new Error('Invalid project: not an object');
+  if (typeof data.name !== 'string' || data.name.length === 0) throw new Error('Invalid project: missing name');
+  if (data.name.length > 200) throw new Error('Invalid project: name too long');
+  if (!Array.isArray(data.scenes)) throw new Error('Invalid project: scenes must be an array');
+  for (const scene of data.scenes) {
+    if (typeof scene.name !== 'string') throw new Error('Invalid project: scene missing name');
+    if (!Array.isArray(scene.layers)) throw new Error('Invalid project: scene missing layers');
+  }
+  if (data.scripts && !Array.isArray(data.scripts)) throw new Error('Invalid project: scripts must be an array');
+  if (data.scripts) {
+    for (const s of data.scripts) {
+      if (!isSafeFilename(s.filename)) throw new Error('Invalid project: unsafe script filename "' + s.filename + '"');
+    }
+  }
+  return data;
+}
+
 export default function PreviewToolbar() {
   const state = useProject();
   const dispatch = useProjectDispatch();
@@ -23,6 +48,10 @@ export default function PreviewToolbar() {
         const dir = state.project.filePath.replace(/[/\\][^/\\]+$/, '');
         const customScripts = [];
         for (const s of state.project.scripts) {
+          if (!isSafeFilename(s.filename)) {
+            console.warn('Skipping unsafe script filename:', s.filename);
+            continue;
+          }
           const filePath = await window.electronAPI.pathJoin(dir, 'scripts', s.filename);
           if (await window.electronAPI.fileExists(filePath)) {
             const content = await window.electronAPI.readFile(filePath);
@@ -118,12 +147,24 @@ export default function PreviewToolbar() {
       });
       if (!result.canceled && result.filePaths.length > 0) {
         const data = await window.electronAPI.loadProject(result.filePaths[0]);
-        const project = JSON.parse(data);
+        const project = validateProject(JSON.parse(data));
         project.filePath = result.filePaths[0];
         dispatch({ type: 'LOAD_PROJECT', project });
       }
     } catch (err) {
       console.error('Open failed:', err);
+    }
+  };
+
+  const handleReload = async () => {
+    if (!state.project || !state.project.filePath) return;
+    try {
+      const data = await window.electronAPI.loadProject(state.project.filePath);
+      const project = validateProject(JSON.parse(data));
+      project.filePath = state.project.filePath;
+      dispatch({ type: 'RELOAD_PROJECT', project });
+    } catch (err) {
+      console.error('Reload failed:', err);
     }
   };
 
@@ -157,6 +198,7 @@ export default function PreviewToolbar() {
       <button className="btn btn-sm" onClick={handleNewProject}>New</button>
       <button className="btn btn-sm" onClick={handleOpen}>Open</button>
       <button className="btn btn-sm" onClick={handleSave} disabled={!state.project}>Save</button>
+      <button className="btn btn-sm" onClick={handleReload} disabled={!state.project || !state.project.filePath} title="Reload project from disk (picks up engine file changes)">Reload</button>
 
       <div className="toolbar-separator" />
 

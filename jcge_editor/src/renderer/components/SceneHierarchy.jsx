@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useProject, useProjectDispatch, getSelectedScene } from '../store/ProjectContext';
+import { useProject, useProjectDispatch, getSelectedScene, getSelectedObject } from '../store/ProjectContext';
 import AddObjectModal from './AddObjectModal';
+import ConfirmDialog from './ConfirmDialog';
 
 function InlineNameInput({ placeholder, onSubmit, onCancel }) {
   const [value, setValue] = useState('');
@@ -40,6 +41,22 @@ export default function SceneHierarchy() {
   const [expandedLayers, setExpandedLayers] = useState({});
   const [addingScene, setAddingScene] = useState(false);
   const [addingLayer, setAddingLayer] = useState(null); // null | 'layer' | 'ui'
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const selectedObj = getSelectedObject(state);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Delete' && state.selectedObjectId && selectedObj) {
+        // Don't trigger when typing in an input or textarea
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+        e.preventDefault();
+        setShowDeleteConfirm(true);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [state.selectedObjectId, selectedObj]);
 
   if (!state.project) {
     return (
@@ -102,6 +119,7 @@ export default function SceneHierarchy() {
                         >
                           <span className="icon">{'\u25A0'}</span>
                           <span>{obj.name || 'GameObject'}</span>
+                          {obj.parentId && <span style={{ fontSize: 9, color: '#f9e2af', marginLeft: 4 }}>{'\u21B3'}</span>}
                         </div>
                       ))}
                       {layer.elements.map(el => (
@@ -112,6 +130,7 @@ export default function SceneHierarchy() {
                         >
                           <span className="icon">{'\u25C6'}</span>
                           <span>{el.name || el.type || 'Element'}</span>
+                          {el.parentId && <span style={{ fontSize: 9, color: '#f9e2af', marginLeft: 4 }}>{'\u21B3'}</span>}
                         </div>
                       ))}
                     </div>
@@ -152,13 +171,25 @@ export default function SceneHierarchy() {
         />
       )}
 
-      {state.selectedLayerId && (
+      {state.selectedObjectType === 'layer' && state.selectedLayerId && (
         <div style={{ padding: '8px 12px' }}>
           <button className="btn btn-sm" onClick={() => setShowAddObject(true)}>+ Add Object</button>
         </div>
       )}
 
       {showAddObject && <AddObjectModal onClose={() => setShowAddObject(false)} />}
+
+      {showDeleteConfirm && selectedObj && (
+        <ConfirmDialog
+          title="Delete Object"
+          message={`Are you sure you want to delete "${selectedObj.name || selectedObj.id}"?`}
+          onConfirm={() => {
+            dispatch({ type: 'REMOVE_OBJECT', id: selectedObj.id });
+            setShowDeleteConfirm(false);
+          }}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
     </div>
   );
 }

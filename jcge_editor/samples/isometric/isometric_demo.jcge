@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "name": "Isometric Demo",
+  "filePath": null,
+  "settings": {
+    "canvasWidth": 960,
+    "canvasHeight": 540,
+    "backgroundColor": "#1a1a2e",
+    "displayFPS": false,
+    "jumpEngineIntro": true
+  },
+  "scenes": [
+    {
+      "id": "scene_iso_main",
+      "name": "IsometricScene",
+      "isDefault": true,
+      "camera": null,
+      "backgroundColor": "#1a1a2e",
+      "isometricMap": {
+        "enabled": true,
+        "cols": 10,
+        "rows": 10,
+        "tileWidth": 64,
+        "tileHeight": 32,
+        "heightStep": 16,
+        "offsetX": 480,
+        "offsetY": 80,
+        "tiles": [
+          [0, 0, 0, 0, 0, 0, 0, 3, 3, 3],
+          [0, 0, 0, 0, 0, 0, 0, 3, 3, 3],
+          [0, 0, 1, 1, 0, 0, 0, 0, 3, 3],
+          [0, 0, 1, 1, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 2, 2, 0, 0, 0, 0],
+          [0, 0, 0, 0, 2, 2, 2, 0, 0, 0],
+          [0, 0, 0, 0, 0, 2, 2, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+          [1, 1, 0, 0, 0, 0, 0, 0, 1, 1]
+        ],
+        "heightMap": [
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 1, 1, 0, 0, 0, 0],
+          [0, 0, 0, 0, 1, 2, 1, 0, 0, 0],
+          [0, 0, 0, 0, 0, 1, 1, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        ],
+        "collisionMap": [
+          [0, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+          [0, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+          [0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        ]
+      },
+      "script": {
+        "onCreate": "// Isometric Demo - click tiles to highlight\nvar isoMap = game.isoMap;\nvar highlight = { col: -1, row: -1 };\n\nif (isoMap) {\n  game.log('Isometric map loaded: ' + isoMap.cols + 'x' + isoMap.rows);\n  game.log('Click on tiles to highlight them');\n  game.log('Use arrow keys to move the highlight');\n}\n\nthis._highlight = highlight;\nthis._moveTimer = 0;",
+        "onUpdate": "var isoMap = game.isoMap;\nif (!isoMap) return true;\n\nvar highlight = this._highlight;\n\n// Keyboard movement\nthis._moveTimer -= elapsedTime;\nif (this._moveTimer <= 0) {\n  var moved = false;\n  if (engine.keyClicked(Keys.LEFT) || engine.keyClicked(Keys.A)) {\n    if (highlight.col < 0) { highlight.col = 5; highlight.row = 5; }\n    else if (highlight.col > 0) highlight.col--;\n    moved = true;\n  }\n  if (engine.keyClicked(Keys.RIGHT) || engine.keyClicked(Keys.D)) {\n    if (highlight.col < 0) { highlight.col = 5; highlight.row = 5; }\n    else if (highlight.col < isoMap.cols - 1) highlight.col++;\n    moved = true;\n  }\n  if (engine.keyClicked(Keys.UP) || engine.keyClicked(Keys.W)) {\n    if (highlight.row < 0) { highlight.col = 5; highlight.row = 5; }\n    else if (highlight.row > 0) highlight.row--;\n    moved = true;\n  }\n  if (engine.keyClicked(Keys.DOWN) || engine.keyClicked(Keys.S)) {\n    if (highlight.row < 0) { highlight.col = 5; highlight.row = 5; }\n    else if (highlight.row < isoMap.rows - 1) highlight.row++;\n    moved = true;\n  }\n  if (moved) this._moveTimer = 0.15;\n}\n\n// Mouse click\nif (engine.mouseClicked()) {\n  var mx = engine.mousePosition().X;\n  var my = engine.mousePosition().Y;\n  var gridPos = isoMap.toGrid(mx, my);\n  if (isoMap.inBounds(gridPos.X, gridPos.Y)) {\n    highlight.col = gridPos.X;\n    highlight.row = gridPos.Y;\n  }\n}\n\n// Draw highlight\nif (highlight.col >= 0 && highlight.row >= 0 && isoMap.inBounds(highlight.col, highlight.row)) {\n  var walkable = isoMap.isWalkable(highlight.col, highlight.row);\n  var color = walkable ? 'rgba(100, 200, 255, 0.5)' : 'rgba(255, 100, 100, 0.5)';\n  isoMap.drawTileHighlight(engine.drawer, highlight.col, highlight.row, color);\n\n  // Draw info text\n  var ctx = engine.ctx;\n  var h = isoMap.getHeight(highlight.col, highlight.row);\n  var tileNames = ['Grass', 'Dirt', 'Stone', 'Water'];\n  var tileType = isoMap.tiles[highlight.row][highlight.col];\n  ctx.fillStyle = 'rgba(0,0,0,0.7)';\n  ctx.fillRect(10, 10, 200, 60);\n  ctx.fillStyle = '#fff';\n  ctx.font = '12px monospace';\n  ctx.fillText('Tile: (' + highlight.col + ', ' + highlight.row + ')', 20, 28);\n  ctx.fillText('Type: ' + (tileNames[tileType] || '?') + '  Height: ' + h, 20, 44);\n  ctx.fillText('Walkable: ' + (walkable ? 'Yes' : 'No'), 20, 60);\n}\n\nreturn true;",
+        "onDestroy": ""
+      },
+      "layers": [
+        {
+          "id": "layer_iso_ground",
+          "name": "ground",
+          "zOrder": 0,
+          "isUI": false,
+          "gameObjects": [],
+          "elements": []
+        }
+      ]
+    }
+  ],
+  "assets": {
+    "sprites": [],
+    "audio": []
+  },
+  "scripts": []
+}

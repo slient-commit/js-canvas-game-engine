@@ -269,6 +269,49 @@
           padding: 1.5rem;
         }
       }
+
+      /* --- Demo Tabs --- */
+      .demo-section {
+        margin-bottom: 2.5rem;
+        border: 1px solid #1a2030;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #0d0d1f;
+      }
+      .demo-tabs {
+        display: flex;
+        background: #111122;
+        border-bottom: 1px solid #1a2030;
+      }
+      .demo-tab {
+        flex: 1;
+        padding: 0.7rem 1rem;
+        border: none;
+        background: transparent;
+        color: #778;
+        font-size: 0.9rem;
+        font-family: inherit;
+        cursor: pointer;
+        transition: color 0.2s, border-color 0.2s;
+        border-bottom: 2px solid transparent;
+      }
+      .demo-tab:hover {
+        color: #aab;
+      }
+      .demo-tab.active {
+        color: #00bbff;
+        border-bottom-color: #00bbff;
+      }
+      .demo-canvas-wrap {
+        display: flex;
+        justify-content: center;
+        background: #000;
+      }
+      #demo-canvas {
+        width: 100%;
+        display: block;
+        aspect-ratio: 960 / 540;
+      }
     </style>
   </head>
 
@@ -292,6 +335,7 @@
         <div class="nav-section">Objects</div>
         <a href="#vec2">Vec2</a>
         <a href="#gameobject">GameObject</a>
+        <a href="#attachments">Attachments</a>
         <a href="#sprite">Sprite &amp; SpriteSheet</a>
         <a href="#spriteatlas">SpriteAtlas</a>
         <a href="#chromakey">Chroma Key</a>
@@ -302,6 +346,7 @@
         <a href="#ui-button">UIButton</a>
         <a href="#ui-label">UILabel</a>
         <a href="#ui-panel">UIPanel</a>
+        <a href="#ui-circle">UICircle</a>
 
         <div class="nav-section">Camera</div>
         <a href="#camera">Camera</a>
@@ -338,6 +383,16 @@
 
       <!-- ==================== MAIN CONTENT ==================== -->
       <main>
+        <section class="demo-section">
+          <div class="demo-tabs">
+            <button class="demo-tab active" data-tab="cutscene">Cutscene Intro</button>
+            <button class="demo-tab" data-tab="tower-defense">Tower Defense</button>
+            <button class="demo-tab" data-tab="shooter">Shooting Game</button>
+          </div>
+          <div class="demo-canvas-wrap">
+            <canvas id="demo-canvas" width="960" height="540"></canvas>
+          </div>
+        </section>
         <h1>JCGE Documentation</h1>
         <p>
           A lightweight 2D game engine built with vanilla JavaScript and HTML5
@@ -395,7 +450,7 @@ window.<span class="fn">addEventListener</span>(<span class="st">"engineReady"</
 │   ├── input/                  <span class="cm">— InputManager</span>
 │   ├── audio/                  <span class="cm">— Sound, SoundManager</span>
 │   ├── animations/             <span class="cm">— Tween, Easing, Animation</span>
-│   ├── ui/                     <span class="cm">— UILayer, UIButton, UILabel, UIPanel</span>
+│   ├── ui/                     <span class="cm">— UILayer, UIButton, UILabel, UIPanel, UICircle</span>
 │   ├── particles/              <span class="cm">— ParticleEmitter, Presets</span>
 │   ├── physics/                <span class="cm">— Collision helpers</span>
 │   ├── tilemap/                <span class="cm">— Tileset, Tilemap</span>
@@ -732,6 +787,38 @@ player.<span class="fn">move</span>(elapsedTime);
 
 <span class="kw">if</span> (player.<span class="fn">collisionWith</span>(enemy)) { <span class="cm">/* AABB collision */</span> }</code></pre>
 
+        <!-- ===== PARENT-CHILD ATTACHMENTS ===== -->
+        <h2 id="attachments">Parent-Child Attachments</h2>
+
+        <p>
+          Attach any <code>GameObject</code> or <code>Element</code> to a parent
+          so it automatically follows the parent's position with an offset.
+          Useful for turrets on tanks, HP bars above characters, etc.
+        </p>
+
+        <pre><code><span class="cm">// Turret follows tank body with offset</span>
+turret.<span class="fn">attachTo</span>(tankBody, <span class="nb">10</span>, <span class="nb">-15</span>);
+
+<span class="cm">// HP bar (UILabel) follows player</span>
+hpBar.<span class="fn">attachTo</span>(player, <span class="nb">0</span>, <span class="nb">-20</span>);
+
+<span class="cm">// Detach later</span>
+turret.<span class="fn">detach</span>();</code></pre>
+
+        <p>
+          The engine automatically updates child positions each frame before rendering.
+          Works across layers &mdash; a UI element can follow a game object in a different layer.
+        </p>
+
+        <h3>Methods</h3>
+
+        <table>
+          <tr><th>Method</th><th>Description</th></tr>
+          <tr><td>attachTo(parent, offsetX, offsetY)</td><td>Attach to a parent object with X/Y offset</td></tr>
+          <tr><td>detach()</td><td>Remove attachment, stop following</td></tr>
+          <tr><td>updateAttachment()</td><td>Manually update position (auto-called by engine)</td></tr>
+        </table>
+
         <!-- ===== SPRITE ===== -->
         <h2 id="sprite">Sprite &amp; SpriteSheet</h2>
 
@@ -969,6 +1056,35 @@ hud.<span class="fn">registerElement</span>(panel);</code></pre>
         <div class="note">
           Register panels <strong>before</strong> labels and buttons in the UILayer
           so they render behind the interactive elements.
+        </div>
+
+        <!-- ===== UI CIRCLE ===== -->
+        <h2 id="ui-circle">UICircle</h2>
+
+        <p>A circle shape element. Extends <code>Element</code>.</p>
+
+        <pre><code><span class="kw">var</span> circle = <span class="kw">new</span> <span class="fn">UICircle</span>(
+    <span class="kw">new</span> <span class="fn">Vec2</span>(<span class="nb">100</span>, <span class="nb">100</span>),
+    {
+        radius:      <span class="nb">30</span>,
+        fillColor:   <span class="st">'#3498db'</span>,
+        borderColor: <span class="st">'#2980b9'</span>,
+        borderWidth: <span class="nb">2</span>
+    }
+);
+layer.<span class="fn">registerElement</span>(circle);</code></pre>
+
+        <table>
+          <tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr>
+          <tr><td><code>radius</code></td><td>number</td><td>20</td><td>Circle radius in pixels</td></tr>
+          <tr><td><code>fillColor</code></td><td>string</td><td>'white'</td><td>Fill color</td></tr>
+          <tr><td><code>borderColor</code></td><td>string</td><td>null</td><td>Border/stroke color (null = no border)</td></tr>
+          <tr><td><code>borderWidth</code></td><td>number</td><td>1</td><td>Border line width</td></tr>
+        </table>
+
+        <div class="note">
+          The <code>position</code> is the <strong>center</strong> of the circle
+          (same as the engine's <code>drawer.circle()</code> method).
         </div>
 
         <!-- ===== CAMERA ===== -->
@@ -1508,5 +1624,10 @@ color.<span class="fn">toStringWithoutAlpha</span>(); <span class="cm">// "rgb(2
         </table>
       </main>
     </div>
+    <script src="engine/engine-core.js"></script>
+    <script src="demos/cutscene.js"></script>
+    <script src="demos/tower-defense.js"></script>
+    <script src="demos/shooter.js"></script>
+    <script src="demos/demo-init.js"></script>
   </body>
 </html>

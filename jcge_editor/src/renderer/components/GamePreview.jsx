@@ -113,6 +113,17 @@ export default function GamePreview() {
     prevFilePathRef.current = currentPath;
   }, [state.project?.filePath]);
 
+  // Force iframe reload when reloadKey changes (user clicked Reload)
+  useEffect(() => {
+    if (state.reloadKey > 0) {
+      setIframeLoaded(false);
+      setEngineReady(false);
+      if (iframeRef.current) {
+        iframeRef.current.src = iframeRef.current.src;
+      }
+    }
+  }, [state.reloadKey]);
+
   // Listen for messages from the iframe
   useEffect(() => {
     function handleMessage(event) {
@@ -127,9 +138,24 @@ export default function GamePreview() {
         case 'objectClicked':
           dispatch({ type: 'SELECT_OBJECT', id: msg.id, objectType: msg.objectType || 'gameobject' });
           break;
-        case 'objectMoved':
-          dispatch({ type: 'UPDATE_OBJECT', id: msg.id, properties: { position: msg.position } });
+        case 'objectMoved': {
+          const props = { position: msg.position };
+          if (msg.attachOffset) {
+            props.attachOffset = msg.attachOffset;
+          }
+          dispatch({ type: 'UPDATE_OBJECT', id: msg.id, properties: props });
           break;
+        }
+        case 'pivotMoved': {
+          dispatch({
+            type: 'UPDATE_PIVOT',
+            id: msg.id,
+            regionName: msg.regionName,
+            pivotX: msg.pivotX,
+            pivotY: msg.pivotY
+          });
+          break;
+        }
       }
     }
     window.addEventListener('message', handleMessage);

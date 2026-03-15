@@ -462,6 +462,55 @@ class Engine {
     }
 
     /**
+     * Update parent-child attachments across all layers.
+     * Called each frame before rendering so children follow their parents.
+     */
+    _updateAttachments() {
+        if (!this.currentScene) return;
+        for (var i = 0; i < this.currentScene.layers.length; i++) {
+            var layer = this.currentScene.layers[i].layer;
+            for (var j = 0; j < layer.gameObjects.length; j++) {
+                var go = layer.gameObjects[j];
+                if (go._attachParent) go.updateAttachment();
+            }
+            for (var j = 0; j < layer.elements.length; j++) {
+                var el = layer.elements[j];
+                if (el._attachParent) el.updateAttachment();
+            }
+        }
+    }
+
+    /**
+     * Draw a shape-based game object (rectangle, circle, triangle)
+     * @param {GameObject} go
+     * @param {Camera} camera
+     */
+    _drawShapeGameObject(go, camera) {
+        var d = this.drawer;
+        var op = go.opacity !== undefined ? go.opacity : 1;
+        switch (go._shapeType) {
+            case 'rectangle':
+                d.rectangle(go.position, go._shapeSize, true, 1, go._fillColor || '#e74c3c', op, camera);
+                if (go._borderColor) {
+                    d.rectangle(go.position, go._shapeSize, false, go._borderWidth || 1, go._borderColor, op, camera);
+                }
+                break;
+            case 'circle':
+                d.circle(go.position, go._radius || 20, 0, -1, true, 1, go._fillColor || '#3498db', op, camera);
+                if (go._borderColor) {
+                    d.circle(go.position, go._radius || 20, 0, -1, false, go._borderWidth || 1, go._borderColor, op, camera);
+                }
+                break;
+            case 'triangle':
+                d.triangle(go.position, go._shapeSize, true, 1, go._fillColor || '#2ecc71', op, camera);
+                if (go._borderColor) {
+                    d.triangle(go.position, go._shapeSize, false, go._borderWidth || 1, go._borderColor, op, camera);
+                }
+                break;
+        }
+    }
+
+    /**
      * Timer callback function, where the magic is running
      */
     timerElapsed(timestamp) {
@@ -489,6 +538,10 @@ class Engine {
 
             // execute the scene logic
             this.currentScene.OnUpdate(this.elapsedTime);
+
+            // Update parent-child attachments before rendering
+            this._updateAttachments();
+
             for (let i = 0; i < this.currentScene.gameObjects.length; i++) {
                 if (this.currentScene.gameObjects[i].showIt)
                     this.drawer.gameObject(this.currentScene.gameObjects[i], 1, this.currentScene.currentCamera);
@@ -503,14 +556,24 @@ class Engine {
 
                 for (let j = 0; j < layer.elements.length; j++) {
                     let element = layer.elements[j];
-                    if (element.showIt)
+                    if (!element.showIt) continue;
+                    if (element._isLabel || element._isPanel || element._isCircle) {
+                        element.draw(this.drawer);
+                    } else if (!element._useSprites && typeof element.drawFallback === 'function') {
+                        element.drawFallback(this.drawer);
+                    } else {
                         this.drawer.element(element, element.opacity, this.currentScene.currentCamera);
+                    }
                 }
 
                 for (let j = 0; j < layer.gameObjects.length; j++) {
                     let gameObject = layer.gameObjects[j];
-                    if (gameObject.showIt)
+                    if (!gameObject.showIt) continue;
+                    if (gameObject._shapeType) {
+                        this._drawShapeGameObject(gameObject, this.currentScene.currentCamera);
+                    } else {
                         this.drawer.gameObject(gameObject, gameObject.opacity, this.currentScene.currentCamera);
+                    }
                 }
             }
 
@@ -528,7 +591,7 @@ class Engine {
                         element.update(this);
                     }
 
-                    if (element._isLabel || element._isPanel) {
+                    if (element._isLabel || element._isPanel || element._isCircle) {
                         element.draw(this.drawer);
                     } else if (!element._useSprites && typeof element.drawFallback === 'function') {
                         element.drawFallback(this.drawer);
@@ -539,8 +602,12 @@ class Engine {
 
                 for (let j = 0; j < layer.gameObjects.length; j++) {
                     let gameObject = layer.gameObjects[j];
-                    if (gameObject.showIt)
+                    if (!gameObject.showIt) continue;
+                    if (gameObject._shapeType) {
+                        this._drawShapeGameObject(gameObject, null);
+                    } else {
                         this.drawer.gameObject(gameObject, gameObject.opacity, null);
+                    }
                 }
             }
         }

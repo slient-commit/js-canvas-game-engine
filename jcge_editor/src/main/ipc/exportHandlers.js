@@ -42,6 +42,11 @@ function registerExportHandlers() {
         fs.mkdirSync(scriptsOutDir, { recursive: true });
       }
       for (const s of projectData.scripts) {
+        // Validate filename to prevent path traversal
+        if (!s.filename || /[/\\]/.test(s.filename) || s.filename === '..' || s.filename === '.') {
+          console.warn('[Export] Skipping unsafe script filename:', s.filename);
+          continue;
+        }
         const srcFile = path.join(projectDir, 'scripts', s.filename);
         if (fs.existsSync(srcFile)) {
           fs.copyFileSync(srcFile, path.join(scriptsOutDir, s.filename));
@@ -100,7 +105,8 @@ function generateIndexHtml(project) {
   }
   if (project.scripts && project.scripts.length > 0) {
     for (const s of project.scripts) {
-      loaderFiles += `\n      { name: "${s.filename}", path: "scripts/${s.filename}" },`;
+      const safeName = escStr(s.filename);
+      loaderFiles += `\n      { name: "${safeName}", path: "scripts/${safeName}" },`;
     }
   }
   loaderFiles += `\n      { name: "game", path: "game.js" }`;
@@ -110,7 +116,7 @@ function generateIndexHtml(project) {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${project.name || 'JCGE Game'}</title>
+  <title>${escStr(project.name || 'JCGE Game')}</title>
   <style>
     * { margin: 0; padding: 0; }
     body { background: ${bg}; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
@@ -153,7 +159,7 @@ function generateGameJs(project) {
   // Register scenes
   for (const scene of scenes) {
     const className = sanitizeClassName(scene.name);
-    code += `  engine.registerScene(new ${className}('${scene.name}', engine));\n`;
+    code += `  engine.registerScene(new ${className}('${escStr(scene.name)}', engine));\n`;
   }
 
   code += `  engine.start();\n`;
@@ -188,18 +194,20 @@ function generateSceneClass(scene, settings) {
   }
 
   // Layers and objects
+  const idToVar = {}; // Map object IDs to variable names for attachTo() resolution
+
   for (let i = 0; i < scene.layers.length; i++) {
     const layer = scene.layers[i];
     const layerVar = 'layer' + i;
 
     if (layer.isUI) {
-      code += `    var ${layerVar} = new UILayer('${layer.name}');\n`;
+      code += `    var ${layerVar} = new UILayer('${escStr(layer.name)}');\n`;
       code += `    this.registerLayer(${layerVar});\n`;
     } else if (i === 0 && layer.name === 'ground') {
       // ground layer is created by default
       code += `    var ${layerVar} = this.layers[0].layer;\n`;
     } else {
-      code += `    var ${layerVar} = new Layer('${layer.name}');\n`;
+      code += `    var ${layerVar} = new Layer('${escStr(layer.name)}');\n`;
       code += `    this.registerLayer(${layerVar});\n`;
     }
 
@@ -207,6 +215,7 @@ function generateSceneClass(scene, settings) {
     for (let j = 0; j < layer.gameObjects.length; j++) {
       const obj = layer.gameObjects[j];
       const objVar = 'obj_' + sanitizeVarName(obj.name || 'go') + '_' + j;
+      idToVar[obj.id] = objVar;
       code += generateGameObjectCode(objVar, obj, layerVar);
     }
 
@@ -214,11 +223,27 @@ function generateSceneClass(scene, settings) {
     for (let j = 0; j < layer.elements.length; j++) {
       const el = layer.elements[j];
       const elVar = 'el_' + sanitizeVarName(el.name || 'el') + '_' + j;
+      idToVar[el.id] = elVar;
       code += generateElementCode(elVar, el, layerVar);
     }
 
     code += '\n';
   }
+
+  // Generate attachTo() calls (must happen after all objects are created)
+  let hasAttachments = false;
+  for (const layer of scene.layers) {
+    for (const obj of [...layer.gameObjects, ...layer.elements]) {
+      if (obj.parentId && idToVar[obj.id] && idToVar[obj.parentId]) {
+        if (!hasAttachments) {
+          code += `    // -- Parent-child attachments --\n`;
+          hasAttachments = true;
+        }
+        code += `    ${idToVar[obj.id]}.attachTo(${idToVar[obj.parentId]}, ${obj.attachOffset?.X || 0}, ${obj.attachOffset?.Y || 0});\n`;
+      }
+    }
+  }
+  if (hasAttachments) code += '\n';
 
   // User onCreate script (runs after visual setup)
   if (scene.script && scene.script.onCreate && scene.script.onCreate.trim()) {
@@ -267,23 +292,55 @@ function generateSceneClass(scene, settings) {
 function generateGameObjectCode(varName, obj, layerVar) {
   let code = '';
 
+  // Shape game objects
+  if (obj.type === 'goRectangle' || obj.type === 'goCircle' || obj.type === 'goTriangle') {
+    code += `    var ${varName}_sprite = new Sprite(1, 1, null);\n`;
+    code += `    var ${varName} = new GameObject(${varName}_sprite, new Vec2(${obj.position.X}, ${obj.position.Y}), ${obj.opacity !== undefined ? obj.opacity : 1});\n`;
+    code += `    ${varName}.name = '${escStr(obj.name || 'Shape')}';\n`;
+
+    if (obj.type === 'goRectangle') {
+      code += `    ${varName}._shapeType = 'rectangle';\n`;
+      code += `    ${varName}._shapeSize = new Size(${obj.size ? obj.size.width : 80}, ${obj.size ? obj.size.height : 50});\n`;
+      code += `    ${varName}._fillColor = '${escStr(obj.fillColor || '#e74c3c')}';\n`;
+    } else if (obj.type === 'goCircle') {
+      code += `    ${varName}._shapeType = 'circle';\n`;
+      code += `    ${varName}._radius = ${obj.radius || 30};\n`;
+      code += `    ${varName}._fillColor = '${escStr(obj.fillColor || '#3498db')}';\n`;
+    } else if (obj.type === 'goTriangle') {
+      code += `    ${varName}._shapeType = 'triangle';\n`;
+      code += `    ${varName}._shapeSize = new Size(${obj.size ? obj.size.width : 60}, ${obj.size ? obj.size.height : 60});\n`;
+      code += `    ${varName}._fillColor = '${escStr(obj.fillColor || '#2ecc71')}';\n`;
+    }
+    if (obj.borderColor) code += `    ${varName}._borderColor = '${escStr(obj.borderColor)}';\n`;
+    if (obj.borderWidth && obj.borderWidth !== 1) code += `    ${varName}._borderWidth = ${obj.borderWidth};\n`;
+
+    if (obj.isStatic) code += `    ${varName}.staticObject();\n`;
+    if (obj.showIt === false) code += `    ${varName}.hide();\n`;
+    if (obj.velocity && (obj.velocity.X !== 0 || obj.velocity.Y !== 0)) {
+      code += `    ${varName}.velocity = new Vec2(${obj.velocity.X}, ${obj.velocity.Y});\n`;
+    }
+    code += `    ${layerVar}.registerGameObject(${varName});\n`;
+    return code;
+  }
+
+  // Standard game object with sprite
   if (obj.sprite && obj.sprite.path) {
     if (obj.sprite.type === 'spritesheet') {
-      code += `    var ${varName}_sprite = new SpriteSheet('${obj.sprite.name || 'anim'}', ${obj.sprite.width}, ${obj.sprite.height}, ${obj.sprite.frameSpeed || 6}, ${obj.sprite.startFrame || 0}, ${obj.sprite.endFrame || 0}, '${obj.sprite.path}');\n`;
+      code += `    var ${varName}_sprite = new SpriteSheet('${escStr(obj.sprite.name || 'anim')}', ${obj.sprite.width}, ${obj.sprite.height}, ${obj.sprite.frameSpeed || 6}, ${obj.sprite.startFrame || 0}, ${obj.sprite.endFrame || 0}, '${escStr(obj.sprite.path)}');\n`;
     } else if (obj.sprite.type === 'spriteatlas') {
-      code += `    var ${varName}_sprite = new SpriteAtlas('${obj.sprite.path}', ${JSON.stringify(obj.sprite.regions || {})}, '${obj.sprite.currentRegion || ''}');\n`;
+      code += `    var ${varName}_sprite = new SpriteAtlas('${escStr(obj.sprite.path)}', ${JSON.stringify(obj.sprite.regions || {})}, '${escStr(obj.sprite.currentRegion || '')}');\n`;
     } else {
-      code += `    var ${varName}_sprite = new Sprite(${obj.sprite.width || 32}, ${obj.sprite.height || 32}, '${obj.sprite.path}');\n`;
+      code += `    var ${varName}_sprite = new Sprite(${obj.sprite.width || 32}, ${obj.sprite.height || 32}, '${escStr(obj.sprite.path)}');\n`;
     }
   } else {
     code += `    var ${varName}_sprite = new Sprite(${obj.sprite ? obj.sprite.width : 32}, ${obj.sprite ? obj.sprite.height : 32}, null);\n`;
   }
 
   if (obj.sprite && obj.sprite.chromaKey) {
-    code += `    ${varName}_sprite.setChromaKey('${obj.sprite.chromaKey}', ${obj.sprite.chromaKeyTolerance !== undefined ? obj.sprite.chromaKeyTolerance : 30});\n`;
+    code += `    ${varName}_sprite.setChromaKey('${escStr(obj.sprite.chromaKey)}', ${obj.sprite.chromaKeyTolerance !== undefined ? obj.sprite.chromaKeyTolerance : 30});\n`;
   }
   code += `    var ${varName} = new GameObject(${varName}_sprite, new Vec2(${obj.position.X}, ${obj.position.Y}), ${obj.opacity !== undefined ? obj.opacity : 1});\n`;
-  code += `    ${varName}.name = '${obj.name || 'GameObject'}';\n`;
+  code += `    ${varName}.name = '${escStr(obj.name || 'GameObject')}';\n`;
 
   if (obj.isStatic) code += `    ${varName}.staticObject();\n`;
   if (obj.showIt === false) code += `    ${varName}.hide();\n`;
@@ -299,20 +356,47 @@ function generateElementCode(varName, el, layerVar) {
   let code = '';
 
   // Handle different element types
+  if (el.type === 'uiText') {
+    code += `    var ${varName} = new UILabel('${escStr(el.text || '')}', new Vec2(${el.position.X}, ${el.position.Y}), { fontSize: ${el.fontSize || 20}, fontFamily: '${escStr(el.fontFamily || 'sans-serif')}', fontStyle: '${escStr(el.fontStyle || 'normal')}', color: '${escStr(el.color || 'white')}' });\n`;
+    if (el.showIt === false) code += `    ${varName}.hide();\n`;
+    if (el.opacity !== undefined && el.opacity !== 1) code += `    ${varName}.opacity = ${el.opacity};\n`;
+    code += `    ${varName}.name = '${escStr(el.name || 'Text')}';\n`;
+    code += `    ${layerVar}.registerElement(${varName});\n`;
+    return code;
+  }
+
   if (el.type === 'uiLabel') {
-    code += `    var ${varName} = new UILabel('${el.text || ''}', new Vec2(${el.position.X}, ${el.position.Y}), ${el.fontSize || 16});\n`;
+    code += `    var ${varName} = new UILabel('${escStr(el.text || '')}', new Vec2(${el.position.X}, ${el.position.Y}), { fontSize: ${el.fontSize || 14}, fontFamily: '${escStr(el.fontFamily || 'monospace')}', fontStyle: '${escStr(el.fontStyle || 'normal')}', color: '${escStr(el.color || 'white')}' });\n`;
+    if (el.showIt === false) code += `    ${varName}.hide();\n`;
+    if (el.opacity !== undefined && el.opacity !== 1) code += `    ${varName}.opacity = ${el.opacity};\n`;
+    code += `    ${varName}.name = '${escStr(el.name || 'Label')}';\n`;
     code += `    ${layerVar}.registerElement(${varName});\n`;
     return code;
   }
 
   if (el.type === 'uiButton') {
-    code += `    var ${varName} = new UIButton('${el.label || 'Button'}', new Vec2(${el.position.X}, ${el.position.Y}), new Size(${el.size ? el.size.width : 120}, ${el.size ? el.size.height : 40}), '${el.normalColor || '#333'}', '${el.fillColor || '#555'}', '${el.borderColor || '#888'}');\n`;
+    code += `    var ${varName} = new UIButton(new Vec2(${el.position.X}, ${el.position.Y}), new Size(${el.size ? el.size.width : 120}, ${el.size ? el.size.height : 40}), { label: '${escStr(el.label || 'Button')}', fontSize: ${el.fontSize || 14}, fontColor: '${escStr(el.fontColor || 'white')}', normalColor: '${escStr(el.normalColor || '#444')}', hoverColor: '${escStr(el.hoverColor || '#666')}', pressedColor: '${escStr(el.pressedColor || '#222')}' });\n`;
+    if (el.showIt === false) code += `    ${varName}.hide();\n`;
+    if (el.opacity !== undefined && el.opacity !== 1) code += `    ${varName}.opacity = ${el.opacity};\n`;
+    code += `    ${varName}.name = '${escStr(el.name || 'Button')}';\n`;
     code += `    ${layerVar}.registerElement(${varName});\n`;
     return code;
   }
 
-  if (el.type === 'uiPanel') {
-    code += `    var ${varName} = new UIPanel(new Vec2(${el.position.X}, ${el.position.Y}), new Size(${el.size ? el.size.width : 200}, ${el.size ? el.size.height : 150}), '${el.fillColor || 'rgba(0,0,0,0.5)'}', '${el.borderColor || '#888'}');\n`;
+  if (el.type === 'uiPanel' || el.type === 'rectangle') {
+    code += `    var ${varName} = new UIPanel(new Vec2(${el.position.X}, ${el.position.Y}), new Size(${el.size ? el.size.width : 200}, ${el.size ? el.size.height : 150}), { fillColor: '${escStr(el.fillColor || 'rgba(0,0,0,0.5)')}', borderColor: ${el.borderColor ? "'" + escStr(el.borderColor) + "'" : 'null'}, borderWidth: ${el.borderWidth || 1} });\n`;
+    if (el.showIt === false) code += `    ${varName}.hide();\n`;
+    if (el.opacity !== undefined && el.opacity !== 1) code += `    ${varName}.opacity = ${el.opacity};\n`;
+    code += `    ${varName}.name = '${escStr(el.name || (el.type === 'rectangle' ? 'Rectangle' : 'Panel'))}';\n`;
+    code += `    ${layerVar}.registerElement(${varName});\n`;
+    return code;
+  }
+
+  if (el.type === 'circle') {
+    code += `    var ${varName} = new UICircle(new Vec2(${el.position.X}, ${el.position.Y}), { radius: ${el.radius || 20}, fillColor: '${escStr(el.fillColor || '#3498db')}', borderColor: ${el.borderColor ? "'" + escStr(el.borderColor) + "'" : 'null'}, borderWidth: ${el.borderWidth || 1} });\n`;
+    if (el.showIt === false) code += `    ${varName}.hide();\n`;
+    if (el.opacity !== undefined && el.opacity !== 1) code += `    ${varName}.opacity = ${el.opacity};\n`;
+    code += `    ${varName}.name = '${escStr(el.name || 'Circle')}';\n`;
     code += `    ${layerVar}.registerElement(${varName});\n`;
     return code;
   }
@@ -320,15 +404,15 @@ function generateElementCode(varName, el, layerVar) {
   // Default element
   if (el.sprite && el.sprite.path) {
     if (el.sprite.type === 'spriteatlas') {
-      code += `    var ${varName}_sprite = new SpriteAtlas('${el.sprite.path}', ${JSON.stringify(el.sprite.regions || {})}, '${el.sprite.currentRegion || ''}');\n`;
+      code += `    var ${varName}_sprite = new SpriteAtlas('${escStr(el.sprite.path)}', ${JSON.stringify(el.sprite.regions || {})}, '${escStr(el.sprite.currentRegion || '')}');\n`;
     } else {
-      code += `    var ${varName}_sprite = new Sprite(${el.sprite.width || 32}, ${el.sprite.height || 32}, '${el.sprite.path}');\n`;
+      code += `    var ${varName}_sprite = new Sprite(${el.sprite.width || 32}, ${el.sprite.height || 32}, '${escStr(el.sprite.path)}');\n`;
     }
   } else {
     code += `    var ${varName}_sprite = new Sprite(${el.sprite ? el.sprite.width : 32}, ${el.sprite ? el.sprite.height : 32}, null);\n`;
   }
   if (el.sprite && el.sprite.chromaKey) {
-    code += `    ${varName}_sprite.setChromaKey('${el.sprite.chromaKey}', ${el.sprite.chromaKeyTolerance !== undefined ? el.sprite.chromaKeyTolerance : 30});\n`;
+    code += `    ${varName}_sprite.setChromaKey('${escStr(el.sprite.chromaKey)}', ${el.sprite.chromaKeyTolerance !== undefined ? el.sprite.chromaKeyTolerance : 30});\n`;
   }
   code += `    var ${varName} = new Element(${varName}_sprite, new Vec2(${el.position.X}, ${el.position.Y}), ${el.opacity !== undefined ? el.opacity : 1});\n`;
   if (el.showIt === false) code += `    ${varName}.hide();\n`;
@@ -342,6 +426,12 @@ function sanitizeClassName(name) {
 
 function sanitizeVarName(name) {
   return name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+}
+
+/** Escape a string for safe embedding inside single-quoted JS string literals */
+function escStr(str) {
+  if (!str) return '';
+  return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n').replace(/\r/g, '\\r');
 }
 
 function generateSoundsJs(projectDir) {
@@ -360,7 +450,7 @@ function generateSoundsJs(projectDir) {
     const base64 = buf.toString('base64');
     const ext = filename.split('.').pop().toLowerCase();
     const mime = mimeMap[ext] || 'audio/mpeg';
-    entries += `  'assets/audio/${filename}': 'data:${mime};base64,${base64}',\n`;
+    entries += `  'assets/audio/${escStr(filename)}': 'data:${mime};base64,${base64}',\n`;
   }
 
   return `// Audio cache generated by JCGE Editor\nvar AUDIO_CACHE = {\n${entries}};\n\n(function() {\n  var _OrigAudio = window.Audio;\n  window.Audio = function(src) {\n    return new _OrigAudio((AUDIO_CACHE && AUDIO_CACHE[src]) ? AUDIO_CACHE[src] : src);\n  };\n  window.Audio.prototype = _OrigAudio.prototype;\n})();\n`;
