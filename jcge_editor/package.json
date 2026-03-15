@@ -10,7 +10,9 @@
     "electron:build": "vite build && electron-builder",
     "electron:build:win": "vite build && electron-builder --win",
     "electron:build:mac": "vite build && electron-builder --mac",
-    "electron:build:linux": "vite build && electron-builder --linux"
+    "electron:build:linux": "vite build && electron-builder --linux",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.5",
@@ -27,6 +29,7 @@
     "electron": "^33.3.1",
     "electron-builder": "^25.1.8",
     "vite": "^6.2.0",
+    "vitest": "^4.1.0",
     "wait-on": "^8.0.3"
   }
 }

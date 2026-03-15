@@ -212,4 +212,4 @@ function registerFileHandlers() {
   });
 }
 
-module.exports = { registerFileHandlers };
+module.exports = { registerFileHandlers, isPathSafe, isSafeFilename };

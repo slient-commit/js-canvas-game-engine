@@ -375,6 +375,9 @@
         <a href="#size">Size</a>
         <a href="#keys">Keys &amp; MouseButton</a>
 
+        <div class="nav-section">Development</div>
+        <a href="#tests">Tests</a>
+
         <div class="ext-links">
           <a href="../src/samples/index.html">Samples</a>
           <a href="../src/empty-game-project/index.html">Starter Template</a>
@@ -1622,6 +1625,142 @@ color.<span class="fn">toStringWithoutAlpha</span>(); <span class="cm">// "rgb(2
             </td>
           </tr>
         </table>
+
+        <!-- ===== TESTS ===== -->
+        <h2 id="tests">Tests</h2>
+
+        <p>
+          The engine and editor both include unit test suites powered by
+          <a href="https://vitest.dev" style="color:#00bbff">Vitest</a>.
+          Tests cover the pure-logic parts of the codebase: math utilities,
+          collision detection, animations, pathfinding, event system, and the
+          editor's state management.
+        </p>
+
+        <h3>Zero-dependency architecture</h3>
+
+        <p>
+          The engine itself is <strong>pure vanilla JavaScript</strong> with no
+          npm dependencies. It loads via a single
+          <code>&lt;script&gt;</code> tag and runs directly in the browser.
+          The <code>node_modules</code> folder and <code>package.json</code>
+          inside <code>src/engine/</code> exist <em>only</em> for the test
+          runner &mdash; they are not used at runtime and do not affect the
+          engine in any way. You can safely delete them and the engine will
+          continue to work exactly the same. They are only needed if you want
+          to run the tests.
+        </p>
+
+        <div class="note">
+          The engine has <strong>zero runtime dependencies</strong>. The npm
+          packages (<code>vitest</code>) are <code>devDependencies</code>
+          used exclusively for testing. No build step, bundler, or
+          <code>node_modules</code> is required to use the engine in a game.
+        </div>
+
+        <h3>How the engine tests work</h3>
+
+        <p>
+          Engine source files declare global classes (<code>class Vec2</code>,
+          <code>class Tween</code>, etc.) without <code>export</code>
+          statements, since they are designed for <code>&lt;script&gt;</code>
+          tag loading in browsers. To test them in Node.js, the test setup
+          file reads each source file with <code>fs.readFileSync</code>,
+          transforms the declarations into <code>globalThis</code>
+          assignments, and evaluates them with <code>vm.runInThisContext</code>.
+          This makes all engine classes available as globals inside tests,
+          exactly as they would be in a browser.
+        </p>
+
+        <h3>Running the tests</h3>
+
+        <pre><code><span class="cm"># Engine tests (181 tests across 8 files)</span>
+<span class="kw">cd</span> src/engine
+npm install     <span class="cm"># one-time: installs vitest</span>
+npm test        <span class="cm"># runs all tests</span>
+npm run test:watch  <span class="cm"># re-runs on file changes</span>
+
+<span class="cm"># Editor tests (92 tests across 2 files)</span>
+<span class="kw">cd</span> jcge_editor
+npm install     <span class="cm"># one-time: installs vitest + other deps</span>
+npm test
+npm run test:watch</code></pre>
+
+        <h3>Test coverage</h3>
+
+        <table>
+          <tr><th>File</th><th>Tests</th><th>What it covers</th></tr>
+          <tr>
+            <td>vec2.test.js</td>
+            <td>36</td>
+            <td>Constructor, add/sub/scale, length, distance, dot, normalize, lerp, clone, equals, statics, aliases</td>
+          </tr>
+          <tr>
+            <td>rgb.test.js</td>
+            <td>8</td>
+            <td>Constructor defaults, custom values, toString, toStringWithoutAlpha</td>
+          </tr>
+          <tr>
+            <td>collision.test.js</td>
+            <td>26</td>
+            <td>rectRect, circleCircle, circleRect, pointRect, pointCircle &mdash; overlap, touching, separated, edge cases</td>
+          </tr>
+          <tr>
+            <td>easing.test.js</td>
+            <td>31</td>
+            <td>All 9 easing functions: boundary values, curve shapes, bounce range, elastic oscillation</td>
+          </tr>
+          <tr>
+            <td>eventEmitter.test.js</td>
+            <td>17</td>
+            <td>on/emit, once, off, removeAll, argument passing, chaining</td>
+          </tr>
+          <tr>
+            <td>tween.test.js</td>
+            <td>22</td>
+            <td>Interpolation, easing, completion, onComplete/onUpdate callbacks, chaining, TweenManager</td>
+          </tr>
+          <tr>
+            <td>isometricUtils.test.js</td>
+            <td>20</td>
+            <td>toScreen, toGrid round-trip, height offset, getDiamondVertices shape</td>
+          </tr>
+          <tr>
+            <td>pathFinder.test.js</td>
+            <td>21</td>
+            <td>A* pathfinding: straight/diagonal paths, obstacles, height cost, out of bounds, waypoint format</td>
+          </tr>
+          <tr>
+            <td colspan="3" style="border-top:1px solid #1a2535; color:#667788; font-family:inherit; font-style:italic">Editor tests (jcge_editor/)</td>
+          </tr>
+          <tr>
+            <td>projectReducer.test.js</td>
+            <td>70</td>
+            <td>All 30+ reducer actions, createEmptyProject, scene/layer/object CRUD, asset renaming, selectors</td>
+          </tr>
+          <tr>
+            <td>fileHandlers.test.js</td>
+            <td>22</td>
+            <td>isPathSafe and isSafeFilename security validation &mdash; path traversal, null inputs, edge cases</td>
+          </tr>
+        </table>
+
+        <h3>Adding new tests</h3>
+
+        <p>
+          For the engine: create a <code>.test.js</code> file in
+          <code>src/engine/tests/</code>. If your test uses a class that
+          isn't loaded yet, add its source file path to the
+          <code>files</code> array in <code>tests/setup.js</code>. The class
+          will then be available as a global in your test.
+        </p>
+
+        <p>
+          For the editor: place test files in a <code>__tests__/</code>
+          directory next to the module being tested, or anywhere Vitest can
+          discover them. Editor modules use standard ES imports, so no
+          special setup is needed.
+        </p>
       </main>
     </div>
     <script src="engine/engine-core.js"></script>

@@ -564,6 +564,8 @@ function projectReducer(state, action) {
   }
 }
 
+export { createEmptyProject, projectReducer, initialState };
+
 export function ProjectProvider({ children }) {
   const [state, dispatch] = useReducer(projectReducer, initialState);
 
