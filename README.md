@@ -3,7 +3,10 @@
 A lightweight 2D game engine built with vanilla JavaScript and HTML5 Canvas. No build tools, no dependencies — just include a script tag and start making games.
 ## Demo
 
-<https://github.com/slient-commit/js-canvas-game-engine/blob/main/media/jcge_demo.mp4>
+<video width="640" height="480" controls>
+  <source src="media/jcge_demo.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
 
 ## Getting Started
 
