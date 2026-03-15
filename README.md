@@ -2,10 +2,6 @@
 
 A lightweight 2D game engine built with vanilla JavaScript and HTML5 Canvas. No build tools, no dependencies — just include a script tag and start making games.
 
-## Demo
-
-![JCGE Demo](images/jcge_demo_gif.gif)
-
 ## Getting Started
 
 ### 1. Create your project
