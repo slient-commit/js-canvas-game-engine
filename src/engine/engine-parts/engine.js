@@ -32,36 +32,39 @@ class Engine {
         this.clickDelay = true;
         this.clickDelayCounter = 0.1;
         this._transition = null;
-        this.canvas.addEventListener('mousemove', function(e) {
+        // Store bound handlers so they can be removed on stop
+        this._onMouseMove = function(e) {
             var rect = this.canvas.getBoundingClientRect();
             this.mousePoint = new Point(e.clientX - rect.left, e.clientY - rect.top);
-        }.bind(this));
-
-        this.canvas.addEventListener('mousedown', function(e) {
+        }.bind(this);
+        this._onMouseDown = function(e) {
             var btn = e.button;
             if (!this.mouseButton.includes(btn)) this.mouseButton.push(btn);
             this.mouseClicking = true;
-        }.bind(this));
-
-        this.canvas.addEventListener('mouseup', function(e) {
+        }.bind(this);
+        this._onMouseUp = function(e) {
             var btn = e.button;
             if (this.mouseButton.includes(btn)) {
                 this.mouseButton = this.removeItemAll(this.mouseButton, btn);
             }
             this.mouseClicking = false;
-        }.bind(this));
-
-        window.addEventListener('keydown', function(e) {
+        }.bind(this);
+        this._onKeyDown = function(e) {
             if (!this.keys.includes(e.code)) this.keys.push(e.code);
             this.isKeyClicked = true;
-        }.bind(this), false);
-
-        window.addEventListener('keyup', function(e) {
+        }.bind(this);
+        this._onKeyUp = function(e) {
             if (this.keys.includes(e.code)) {
                 this.keys = this.removeItemAll(this.keys, e.code);
             }
             this.isKeyClicked = false;
-        }.bind(this), false);
+        }.bind(this);
+
+        this.canvas.addEventListener('mousemove', this._onMouseMove);
+        this.canvas.addEventListener('mousedown', this._onMouseDown);
+        this.canvas.addEventListener('mouseup', this._onMouseUp);
+        window.addEventListener('keydown', this._onKeyDown, false);
+        window.addEventListener('keyup', this._onKeyUp, false);
     }
 
     /**
@@ -258,6 +261,15 @@ class Engine {
         if (this._rafId) {
             cancelAnimationFrame(this._rafId);
             this._rafId = null;
+        }
+        // Remove event listeners to prevent leaks
+        this.canvas.removeEventListener('mousemove', this._onMouseMove);
+        this.canvas.removeEventListener('mousedown', this._onMouseDown);
+        this.canvas.removeEventListener('mouseup', this._onMouseUp);
+        window.removeEventListener('keydown', this._onKeyDown, false);
+        window.removeEventListener('keyup', this._onKeyUp, false);
+        if (this._onResize) {
+            window.removeEventListener('resize', this._onResize);
         }
         return true;
     }
