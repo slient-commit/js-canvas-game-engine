@@ -40,6 +40,13 @@ class InputManager {
             this._keysReleased.add(e.code);
         }.bind(this));
 
+        // Mouse wheel
+        this._wheelDelta = 0;
+        this.canvas.addEventListener('wheel', function(e) {
+            e.preventDefault();
+            this._wheelDelta += e.deltaY > 0 ? -1 : (e.deltaY < 0 ? 1 : 0);
+        }.bind(this), { passive: false });
+
         // Mouse
         this.canvas.addEventListener('mousemove', function(e) {
             var rect = this.canvas.getBoundingClientRect();
@@ -94,6 +101,7 @@ class InputManager {
         this._keysReleased.clear();
         this._mousePressed.clear();
         this._mouseReleased.clear();
+        this._wheelDelta = 0;
 
         // Poll gamepads
         var gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
@@ -171,6 +179,9 @@ class InputManager {
 
     /** Get mouse position relative to canvas (always available, never consumed) */
     getMousePosition() { return this._mousePosition; }
+
+    /** Get mouse wheel delta for this frame (+1 scroll up, -1 scroll down, 0 none) */
+    getWheelDelta() { return this._wheelDelta; }
 
     // --- Touch ---
 

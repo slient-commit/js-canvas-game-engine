@@ -185,19 +185,31 @@
         }
     ]
 
-    var currentFolders = location.href.split("/");
+    // Derive engine path from this script tag's own src attribute.
+    // Works regardless of where the HTML file is located.
+    var scripts = document.getElementsByTagName('script');
     var path = "";
-    var startWriting = false;
-    for (var i = 0; i < currentFolders.length - 1; i++) {
-        if (startWriting) {
-            path += "../";
-        }
-
-        if (currentFolders[i] == "src") {
-            startWriting = true;
+    for (var s = 0; s < scripts.length; s++) {
+        var src = scripts[s].getAttribute('src') || "";
+        if (src.indexOf('engine-core.js') !== -1) {
+            path = src.substring(0, src.lastIndexOf('/') + 1);
+            break;
         }
     }
-    path += "engine/";
+    // Fallback: legacy URL-based resolution for backward compat
+    if (!path) {
+        var currentFolders = location.href.split("/");
+        var startWriting = false;
+        for (var i = 0; i < currentFolders.length - 1; i++) {
+            if (startWriting) {
+                path += "../";
+            }
+            if (currentFolders[i] == "src") {
+                startWriting = true;
+            }
+        }
+        path += "engine/";
+    }
 
     function loadScript(index) {
         if (index >= files.length) {

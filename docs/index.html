@@ -312,6 +312,34 @@
         display: block;
         aspect-ratio: 960 / 540;
       }
+
+      /* --- Editor Screenshots --- */
+      .editor-screenshots {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+      }
+      .editor-screenshots figure {
+        margin: 0;
+      }
+      .editor-screenshots img {
+        width: 100%;
+        border-radius: 6px;
+        border: 1px solid #1a2030;
+        display: block;
+      }
+      .editor-screenshots figcaption {
+        font-size: 0.75rem;
+        color: #556677;
+        text-align: center;
+        margin-top: 0.3rem;
+      }
+      @media (max-width: 800px) {
+        .editor-screenshots {
+          grid-template-columns: 1fr;
+        }
+      }
     </style>
   </head>
 
@@ -375,10 +403,14 @@
         <a href="#size">Size</a>
         <a href="#keys">Keys &amp; MouseButton</a>
 
+        <div class="nav-section">Tools</div>
+        <a href="#editor">Visual Editor</a>
+
         <div class="nav-section">Development</div>
         <a href="#tests">Tests</a>
 
         <div class="ext-links">
+          <a href="https://github.com/slient-commit/js-canvas-game-engine" target="_blank">GitHub Repo</a>
           <a href="../src/samples/index.html">Samples</a>
           <a href="../src/empty-game-project/index.html">Starter Template</a>
         </div>
@@ -1625,6 +1657,67 @@ color.<span class="fn">toStringWithoutAlpha</span>(); <span class="cm">// "rgb(2
             </td>
           </tr>
         </table>
+
+        <!-- ===== EDITOR ===== -->
+        <h2 id="editor">Visual Editor</h2>
+
+        <p>
+          JCGE comes with a standalone visual editor built with
+          <strong>Vite + React + Electron</strong>. It lets you visually compose
+          scenes, manage layers, place game objects, configure cameras, paint
+          isometric tilemaps, and export playable games &mdash; all without
+          writing boilerplate.
+        </p>
+
+        <div class="editor-screenshots">
+          <figure>
+            <img src="images/editor-scene.png" alt="Scene editor view">
+            <figcaption>Scene &amp; Layer management</figcaption>
+          </figure>
+          <figure>
+            <img src="images/editor-objects.png" alt="Object properties panel">
+            <figcaption>Object properties &amp; transforms</figcaption>
+          </figure>
+          <figure>
+            <img src="images/editor-isometric.png" alt="Isometric map editor">
+            <figcaption>Isometric tilemap painting</figcaption>
+          </figure>
+          <figure>
+            <img src="images/editor-preview.png" alt="Live preview">
+            <figcaption>Live preview &amp; export</figcaption>
+          </figure>
+        </div>
+
+        <div class="note">
+          Replace the placeholder images above with your own screenshots.
+          Place them in <code>docs/images/</code> with the filenames:
+          <code>editor-scene.png</code>, <code>editor-objects.png</code>,
+          <code>editor-isometric.png</code>, <code>editor-preview.png</code>.
+        </div>
+
+        <h3>Features</h3>
+        <ul>
+          <li>Create and manage multiple scenes with drag-and-drop</li>
+          <li>Add layers with z-ordering and UI/world toggle</li>
+          <li>Place GameObjects and Elements with sprite preview</li>
+          <li>Configure FixedCamera or WorldCamera per scene</li>
+          <li>Isometric map editor with tile type, height, and collision painting</li>
+          <li>Asset manager for sprites and audio with rename support</li>
+          <li>Scene script editor with CodeMirror (syntax highlighting)</li>
+          <li>Live preview with play/edit toggle</li>
+          <li>Export to standalone HTML game</li>
+        </ul>
+
+        <h3>Running the editor</h3>
+        <pre><code><span class="kw">cd</span> jcge_editor
+npm install
+npm run electron:dev    <span class="cm"># dev mode with hot reload</span>
+npm run electron:build  <span class="cm"># build standalone app</span></code></pre>
+
+        <p>
+          Source code and documentation:
+          <a href="https://github.com/slient-commit/js-canvas-game-engine" style="color:#00bbff" target="_blank">github.com/slient-commit/js-canvas-game-engine</a>
+        </p>
 
         <!-- ===== TESTS ===== -->
         <h2 id="tests">Tests</h2>

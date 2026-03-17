@@ -144,11 +144,21 @@ class Scene {
     OnCreate() { return true; }
 
     /**
-     * Run every second
-     * @param {float} elapsedTime 
+     * Run every frame with variable delta time.
+     * Use for rendering, input handling, and general game logic.
+     * @param {float} elapsedTime
      * @returns {boolean}
      */
     OnUpdate(elapsedTime) { return true; }
+
+    /**
+     * Run at a fixed 60 Hz rate, decoupled from frame rate.
+     * Use for physics, movement, and anything that needs consistent timing.
+     * Heavy rendering in OnUpdate won't affect this rate.
+     * @param {float} fixedDt - always 1/60 (~0.01667 seconds)
+     * @returns {boolean}
+     */
+    OnFixedUpdate(fixedDt) { return true; }
 
     /**
      * Run's once after the end of the scene

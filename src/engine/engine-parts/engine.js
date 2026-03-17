@@ -237,6 +237,8 @@ class Engine {
         var result = this.OnCreate();
         this.engineActive = result !== false; // only explicit 'return false' stops the engine
         this.startTime = performance.now();
+        this._accumulator = 0;
+        this._fixedDt = 1 / 60; // 60 Hz fixed timestep
         this._boundLoop = this._gameLoop.bind(this);
         this._rafId = requestAnimationFrame(this._boundLoop);
         return this.engineActive;
@@ -523,23 +525,41 @@ class Engine {
     }
 
     /**
-     * Timer callback function, where the magic is running
+     * Timer callback function, where the magic is running.
+     *
+     * Uses a semi-fixed timestep:
+     *  - Fixed-rate loop (60 Hz): tweens, scene.OnFixedUpdate (physics)
+     *  - Variable-rate (once per frame): scene.OnUpdate (rendering + game logic)
+     *
+     * Heavy ctx operations in OnUpdate cause lower FPS but engine-managed
+     * systems (tweens, OnFixedUpdate physics) stay at a consistent rate.
      */
     timerElapsed(timestamp) {
-        this.drawer.clear();
         // Calculate the delta time
         if (timestamp === undefined) timestamp = performance.now();
-        this.elapsedTime = (timestamp - this.startTime) / 1000;
-        if (this.elapsedTime > 0.1) this.elapsedTime = 0.016; // cap to prevent spiral of death
+        var frameDt = (timestamp - this.startTime) / 1000;
+        if (frameDt > 0.1) frameDt = 0.016; // cap to prevent spiral of death
         this.startTime = timestamp;
 
-        // When paused, store real delta for FPS but zero out elapsed for game logic
-        var realElapsedTime = this.elapsedTime;
-        if (this.paused) {
-            this.elapsedTime = 0;
+        var realElapsedTime = frameDt;
+
+        // ── Fixed-rate simulation (tweens, physics) ──
+        if (!this.paused) {
+            this._accumulator += frameDt;
+            while (this._accumulator >= this._fixedDt) {
+                // Update tweens at fixed rate for consistent animation
+                this.tweens.update(this._fixedDt);
+                // User physics callback (if overridden)
+                if (this.currentScene !== null && this.currentScene.isCreated) {
+                    this.currentScene.OnFixedUpdate(this._fixedDt);
+                }
+                this._accumulator -= this._fixedDt;
+            }
         }
-        // Run the user logic everytime
-        // this.engineActive = this.OnUpdate(this.elapsedTime);
+
+        // ── Variable-rate update + render (once per frame) ──
+        this.elapsedTime = this.paused ? 0 : frameDt;
+        this.drawer.clear();
 
         this.executeScenes();
         if (this.currentScene !== null) {
@@ -548,7 +568,7 @@ class Engine {
                 this.currentScene.created();
             }
 
-            // execute the scene logic
+            // execute the scene logic (variable dt — for rendering + game logic)
             this.currentScene.OnUpdate(this.elapsedTime);
 
             // Update parent-child attachments before rendering
@@ -623,14 +643,10 @@ class Engine {
                 }
             }
         }
-        // Update tweens (skip when paused)
-        if (!this.paused) {
-            this.tweens.update(this.elapsedTime);
-        }
 
         // Draw scene transition overlay (freeze when paused)
         if (this._transition) {
-            this._drawTransition(this.paused ? 0 : this.elapsedTime);
+            this._drawTransition(this.paused ? 0 : frameDt);
         }
 
         // Debug overlay
