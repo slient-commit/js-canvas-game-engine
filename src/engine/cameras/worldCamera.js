@@ -100,6 +100,54 @@ class WorldCamera extends Camera {
     }
 
     /**
+     * Set camera center to a world position (updates position and offset)
+     * @param {number} x - world X
+     * @param {number} y - world Y
+     */
+    setCenter(x, y) {
+        this.location = new Vec2(x, y);
+        this.position = new Vec2(
+            this.location.X - this.cameraSize.width / 2,
+            this.location.Y - this.cameraSize.height / 2
+        );
+        this.getOffset();
+    }
+
+    /**
+     * Convert screen coordinates to world coordinates (zoom-aware)
+     * @param {number} screenX
+     * @param {number} screenY
+     * @returns {Vec2} world position
+     */
+    screenToWorld(screenX, screenY) {
+        var worldX = this.location.X + (screenX - this.cameraSize.width / 2) / this._zoom;
+        var worldY = this.location.Y + (screenY - this.cameraSize.height / 2) / this._zoom;
+        return new Vec2(worldX, worldY);
+    }
+
+    /**
+     * Apply camera zoom transform to the canvas context
+     * Call before drawing world-space content, pair with resetTransform()
+     * @param {CanvasRenderingContext2D} ctx
+     */
+    applyTransform(ctx) {
+        ctx.save();
+        var hw = this.cameraSize.width / 2;
+        var hh = this.cameraSize.height / 2;
+        ctx.translate(hw, hh);
+        ctx.scale(this._zoom, this._zoom);
+        ctx.translate(-hw, -hh);
+    }
+
+    /**
+     * Reset canvas context after applyTransform()
+     * @param {CanvasRenderingContext2D} ctx
+     */
+    resetTransform(ctx) {
+        ctx.restore();
+    }
+
+    /**
      * Clamp camera position within world bounds
      */
     clampPosition() {

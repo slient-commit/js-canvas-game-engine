@@ -1131,16 +1131,19 @@ scene.<span class="fn">setCamera</span>(cam);</code></pre>
 
         <h2 id="worldcamera">WorldCamera</h2>
 
-        <p>Extends <code>Camera</code> with smooth follow, shake, and zoom.</p>
+        <p>Extends <code>Camera</code> with smooth follow, shake, zoom, and coordinate conversion.</p>
 
         <pre><code><span class="kw">var</span> cam = <span class="kw">new</span> <span class="fn">WorldCamera</span>(screenW, screenH, worldW, worldH);
 cam.addOffset = <span class="nb">true</span>;
 cam.smoothFollow = <span class="nb">true</span>;
 cam.followLerp = <span class="nb">0.1</span>;      <span class="cm">// 0 = no follow, 1 = instant</span>
 
-<span class="cm">// In OnUpdate:</span>
+<span class="cm">// Follow a game object:</span>
 cam.<span class="fn">setPositionTo</span>(gameObject, elapsedTime);
-cam.<span class="fn">update</span>(elapsedTime);</code></pre>
+cam.<span class="fn">update</span>(elapsedTime);
+
+<span class="cm">// Or set camera center directly (free-form pan):</span>
+cam.<span class="fn">setCenter</span>(<span class="nb">400</span>, <span class="nb">300</span>);</code></pre>
 
         <table>
           <tr>
@@ -1152,18 +1155,59 @@ cam.<span class="fn">update</span>(elapsedTime);</code></pre>
             <td>Follow a target with smooth lerp</td>
           </tr>
           <tr>
+            <td>setCenter(x, y)</td>
+            <td>Set camera center to a world position (updates position and offset automatically)</td>
+          </tr>
+          <tr>
             <td>shake(intensity, duration)</td>
             <td>Camera shake effect</td>
           </tr>
           <tr>
             <td>setZoom(level)</td>
-            <td>Set zoom (1.0 = normal)</td>
+            <td>Set zoom (1.0 = normal, 2.0 = 2x zoom in, 0.5 = zoom out)</td>
+          </tr>
+          <tr>
+            <td>getZoom()</td>
+            <td>Returns current zoom level</td>
+          </tr>
+          <tr>
+            <td>screenToWorld(screenX, screenY)</td>
+            <td>Convert screen coordinates to world coordinates (zoom-aware). Returns <code>Vec2</code></td>
+          </tr>
+          <tr>
+            <td>applyTransform(ctx)</td>
+            <td>Apply zoom transform to canvas context. Call before drawing world-space content</td>
+          </tr>
+          <tr>
+            <td>resetTransform(ctx)</td>
+            <td>Restore canvas context after <code>applyTransform()</code></td>
           </tr>
           <tr>
             <td>update(dt)</td>
             <td>Update shake and effects (call each frame)</td>
           </tr>
         </table>
+
+        <h3>Zoom Rendering</h3>
+        <p>Use <code>applyTransform</code> / <code>resetTransform</code> to draw world content at the current zoom level. UI should be drawn outside the transform block so it stays in screen space.</p>
+
+        <pre><code><span class="cm">// Zoom with scroll wheel</span>
+<span class="kw">var</span> wheel = input.<span class="fn">getWheelDelta</span>();
+<span class="kw">if</span> (wheel !== <span class="nb">0</span>) {
+    <span class="kw">var</span> z = cam.<span class="fn">getZoom</span>();
+    cam.<span class="fn">setZoom</span>(wheel > <span class="nb">0</span> ? z * <span class="nb">1.1</span> : z / <span class="nb">1.1</span>);
+}
+
+<span class="cm">// Convert mouse to world coords (accounts for zoom)</span>
+<span class="kw">var</span> world = cam.<span class="fn">screenToWorld</span>(mousePos.X, mousePos.Y);
+
+<span class="cm">// Draw world content with zoom</span>
+cam.<span class="fn">applyTransform</span>(ctx);
+map.<span class="fn">draw</span>(drawer, cam);       <span class="cm">// world-space drawing</span>
+cam.<span class="fn">resetTransform</span>(ctx);
+
+<span class="cm">// Draw UI after (screen-space, no zoom)</span>
+drawer.<span class="fn">text</span>(<span class="st">'HUD'</span>, <span class="kw">new</span> <span class="fn">Vec2</span>(<span class="nb">10</span>, <span class="nb">20</span>), <span class="nb">14</span>, <span class="st">'monospace'</span>, <span class="st">'bold'</span>, <span class="st">'#fff'</span>);</code></pre>
 
         <!-- ===== TILEMAP ===== -->
         <h2 id="tilemap">Tilemap</h2>
@@ -1506,6 +1550,7 @@ engine.debug.showObjectCount    = <span class="nb">true</span>;</code></pre>
           <tr><td>heightMap[][]</td><td><code>number</code></td><td>Height values indexed as <code>[row][col]</code></td></tr>
           <tr><td>collisionMap[][]</td><td><code>number</code></td><td>0 = walkable, 1 = blocked. Indexed as <code>[row][col]</code></td></tr>
           <tr><td>offset</td><td><code>Vec2</code></td><td>Screen offset for centering the map</td></tr>
+          <tr><td>tileSprites</td><td><code>object</code></td><td>Map of tile type ID &rarr; <code>Image</code>. Registered via <code>setTileSprite()</code></td></tr>
         </table>
 
         <h3>Methods</h3>
@@ -1517,9 +1562,22 @@ engine.debug.showObjectCount    = <span class="nb">true</span>;</code></pre>
           <tr><td>isWalkable(col, row)</td><td>Returns <code>true</code> if tile is not blocked</td></tr>
           <tr><td>canMoveTo(fromCol, fromRow, toCol, toRow)</td><td>Walkable AND height difference &le; 1</td></tr>
           <tr><td>inBounds(col, row)</td><td>Returns <code>true</code> if coordinates are within grid</td></tr>
+          <tr><td>setTileSprite(tileType, image)</td><td>Register a sprite image for a tile type. <code>draw()</code> renders the sprite instead of a procedural diamond</td></tr>
           <tr><td>draw(drawer, camera, entityCallback)</td><td>Render all tiles back-to-front with optional entity callback</td></tr>
           <tr><td>drawTileHighlight(drawer, col, row, color, camera)</td><td>Draw a highlighted diamond overlay on a tile</td></tr>
         </table>
+
+        <h3>Tile Sprites</h3>
+        <p>Register <code>Image</code> objects per tile type. When a sprite is registered for a tile type, <code>draw()</code> renders it instead of the procedural colored diamond. Tiles without a registered sprite fall back to the default procedural rendering.</p>
+
+        <pre><code><span class="kw">var</span> grassImg = <span class="kw">new</span> <span class="fn">Image</span>();
+grassImg.src = <span class="st">'tiles/grass.png'</span>;
+<span class="kw">var</span> roadImg = <span class="kw">new</span> <span class="fn">Image</span>();
+roadImg.src = <span class="st">'tiles/road.png'</span>;
+
+map.<span class="fn">setTileSprite</span>(<span class="nb">0</span>, grassImg);  <span class="cm">// tile type 0 uses grass sprite</span>
+map.<span class="fn">setTileSprite</span>(<span class="nb">1</span>, roadImg);   <span class="cm">// tile type 1 uses road sprite</span>
+<span class="cm">// tile type 2 has no sprite → draws procedural diamond</span></code></pre>
 
         <h3>Entity Callback</h3>
         <p>The <code>draw()</code> method accepts an optional callback for depth-sorted entity rendering. The callback is called once per tile during the back-to-front traversal:</p>
@@ -1532,7 +1590,7 @@ engine.debug.showObjectCount    = <span class="nb">true</span>;</code></pre>
 });</code></pre>
 
         <div class="note">
-          Tile colors are derived from tile type: 0 = grass (green), 1 = dirt (brown), 2 = stone (grey), 3 = water (blue). Elevated tiles render left and right side faces with darkened shading.
+          Default procedural tile colors are derived from tile type: 0 = grass (green), 1 = dirt (brown), 2 = stone (grey), 3 = water (blue). Elevated tiles render left and right side faces with darkened shading. When a tile sprite is registered via <code>setTileSprite()</code>, it replaces the procedural top face.
         </div>
 
         <!-- ===== PATHFINDER ===== -->

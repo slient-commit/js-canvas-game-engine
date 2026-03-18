@@ -19,6 +19,7 @@ class IsometricMap {
         this.tiles = [];
         this.heightMap = [];
         this.collisionMap = [];
+        this.tileSprites = {}; // tileType → Image
 
         for (var r = 0; r < rows; r++) {
             this.tiles[r] = [];
@@ -138,6 +139,16 @@ class IsometricMap {
     }
 
     /**
+     * Register a sprite image for a tile type
+     * When set, draw() renders the sprite instead of a procedural diamond
+     * @param {number} tileType - tile type ID (matches this.tiles values)
+     * @param {HTMLImageElement} image
+     */
+    setTileSprite(tileType, image) {
+        this.tileSprites[tileType] = image;
+    }
+
+    /**
      * Render the isometric map with depth-sorted entity callback
      * @param {Drawer} drawer
      * @param {Camera} [camera]
@@ -187,18 +198,24 @@ class IsometricMap {
                     ctx.fill();
                 }
 
-                // Top face (diamond)
-                ctx.beginPath();
-                ctx.moveTo(verts[0].X, verts[0].Y);
-                ctx.lineTo(verts[1].X, verts[1].Y);
-                ctx.lineTo(verts[2].X, verts[2].Y);
-                ctx.lineTo(verts[3].X, verts[3].Y);
-                ctx.closePath();
-                ctx.fillStyle = topColor;
-                ctx.fill();
-                ctx.strokeStyle = 'rgba(0,0,0,0.12)';
-                ctx.lineWidth = 0.5;
-                ctx.stroke();
+                // Top face — sprite if registered, otherwise procedural diamond
+                var spriteImg = this.tileSprites[tileType];
+                if (spriteImg && spriteImg.complete) {
+                    var spriteH = this.tileHeight + h * this.heightStep;
+                    ctx.drawImage(spriteImg, sx - this.tileWidth / 2, sy, this.tileWidth, spriteH);
+                } else {
+                    ctx.beginPath();
+                    ctx.moveTo(verts[0].X, verts[0].Y);
+                    ctx.lineTo(verts[1].X, verts[1].Y);
+                    ctx.lineTo(verts[2].X, verts[2].Y);
+                    ctx.lineTo(verts[3].X, verts[3].Y);
+                    ctx.closePath();
+                    ctx.fillStyle = topColor;
+                    ctx.fill();
+                    ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+                    ctx.lineWidth = 0.5;
+                    ctx.stroke();
+                }
 
                 if (entityCallback) {
                     entityCallback(col, row, sx, sy);
