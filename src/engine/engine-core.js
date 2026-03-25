@@ -88,6 +88,10 @@
             path: "audio/soundManager.js"
         },
         {
+            name: "SpatialLoop script",
+            path: "audio/spatialLoop.js"
+        },
+        {
             name: "Animation script",
             path: "animations/animation.js"
         },

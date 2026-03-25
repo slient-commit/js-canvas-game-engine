@@ -2,6 +2,7 @@ class AssetManager {
     constructor() {
         this._images = {};
         this._sounds = {};
+        this._json = {};
         this._loaded = 0;
         this._total = 0;
         this._onProgress = null;
@@ -29,6 +30,17 @@ class AssetManager {
      */
     loadSound(key, path) {
         this._queue.push({ type: 'sound', key: key, path: path });
+        return this;
+    }
+
+    /**
+     * Queue a JSON file to load
+     * @param {string} key - unique identifier
+     * @param {string} path - JSON file path
+     * @returns {AssetManager}
+     */
+    loadJSON(key, path) {
+        this._queue.push({ type: 'json', key: key, path: path });
         return this;
     }
 
@@ -74,6 +86,8 @@ class AssetManager {
                 this._loadImageAsset(item.key, item.path);
             } else if (item.type === 'sound') {
                 this._loadSoundAsset(item.key, item.path);
+            } else if (item.type === 'json') {
+                this._loadJSONAsset(item.key, item.path);
             }
         }
     }
@@ -110,6 +124,30 @@ class AssetManager {
     }
 
     /** @private */
+    _loadJSONAsset(key, path) {
+        var self = this;
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', path, true);
+        xhr.onload = function() {
+            if (xhr.status === 200 || xhr.status === 0) {
+                try {
+                    self._json[key] = JSON.parse(xhr.responseText);
+                } catch (e) {
+                    console.error('AssetManager: failed to parse JSON "' + key + '":', e.message);
+                }
+            } else {
+                console.error('AssetManager: failed to load JSON "' + key + '" (status ' + xhr.status + ')');
+            }
+            self._assetLoaded();
+        };
+        xhr.onerror = function() {
+            console.error('AssetManager: failed to load JSON "' + key + '" from ' + path);
+            self._assetLoaded();
+        };
+        xhr.send();
+    }
+
+    /** @private */
     _assetLoaded() {
         this._loaded++;
         if (this._onProgress) this._onProgress(this._loaded, this._total);
@@ -136,6 +174,15 @@ class AssetManager {
      */
     getSound(key) {
         return this._sounds[key] || null;
+    }
+
+    /**
+     * Get a loaded JSON object
+     * @param {string} key
+     * @returns {Object|null}
+     */
+    getJSON(key) {
+        return this._json[key] || null;
     }
 
     /**

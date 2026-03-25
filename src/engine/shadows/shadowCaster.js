@@ -11,6 +11,7 @@ class ShadowCaster {
         this.size = size || new Size(32, 32);
         this.type = type || 'rectangle';
         this.heightScale = (heightScale !== undefined && heightScale !== null) ? heightScale : 1.0;
+        this.rotation = 0; // radians, rotates the shadow shape
         this.active = true;
     }
 }

@@ -35,6 +35,10 @@ class UIButton extends Element {
         this.normalColor = options.normalColor || '#444';
         this.hoverColor = options.hoverColor || '#666';
         this.pressedColor = options.pressedColor || '#222';
+        this.activeColor = options.activeColor || null;
+        this.activeFontColor = options.activeFontColor || null;
+        this.borderColor = options.borderColor || null;
+        this.activeBorderColor = options.activeBorderColor || null;
 
         this.onClick = options.onClick || null;
         this.onHover = options.onHover || null;
@@ -42,6 +46,7 @@ class UIButton extends Element {
         this.isHovered = false;
         this.isPressed = false;
         this.isDisabled = false;
+        this.isActive = false;
         this._wasHovered = false;
         this._wasPressed = false;
         this._useSprites = !!(this.normalSprite);
@@ -98,16 +103,23 @@ class UIButton extends Element {
      */
     drawFallback(drawer) {
         var color = this.normalColor;
-        if (this.isPressed) color = this.pressedColor;
+        if (this.isActive && this.activeColor) color = this.activeColor;
+        else if (this.isPressed) color = this.pressedColor;
         else if (this.isHovered) color = this.hoverColor;
 
         drawer.rectangle(this.position, this.size, true, 1, color, this.opacity);
 
+        // Border
+        var bc = (this.isActive && this.activeBorderColor) ? this.activeBorderColor : this.borderColor;
+        if (bc) {
+            drawer.rectangle(this.position, this.size, false, 1, bc, this.opacity);
+        }
+
         if (this.label) {
-            var textW = drawer.textWidth(this.label, this.fontSize, this.fontFamily, 'bold');
-            var tx = this.position.X + (this.size.width - textW) / 2;
-            var ty = this.position.Y + (this.size.height + this.fontSize) / 2 - 2;
-            drawer.text(this.label, new Position(tx, ty), this.fontSize, this.fontFamily, 'bold', this.fontColor, this.opacity);
+            var fc = (this.isActive && this.activeFontColor) ? this.activeFontColor : this.fontColor;
+            var tx = this.position.X + this.size.width / 2;
+            var ty = this.position.Y + this.size.height / 2;
+            drawer.text(this.label, new Position(tx, ty), this.fontSize, this.fontFamily, 'bold', fc, this.opacity, null, 'center', 'middle');
         }
     }
 }

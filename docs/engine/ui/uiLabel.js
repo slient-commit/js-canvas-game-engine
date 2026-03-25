@@ -18,6 +18,8 @@ class UILabel extends Element {
         this.fontFamily = options.fontFamily || 'monospace';
         this.fontStyle = options.fontStyle || 'normal';
         this.color = options.color || 'white';
+        this.align = options.align || 'left';
+        this.baseline = options.baseline || 'top';
         this._isLabel = true;
     }
 
@@ -27,7 +29,7 @@ class UILabel extends Element {
      */
     draw(drawer) {
         if (!this.showIt) return;
-        drawer.text(this.text, this.position, this.fontSize, this.fontFamily, this.fontStyle, this.color, this.opacity);
+        drawer.text(this.text, this.position, this.fontSize, this.fontFamily, this.fontStyle, this.color, this.opacity, null, this.align, this.baseline);
     }
 
     /**

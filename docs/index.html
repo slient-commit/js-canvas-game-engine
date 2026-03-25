@@ -387,6 +387,7 @@
         <a href="#collision">Collision</a>
         <a href="#events">EventEmitter</a>
         <a href="#sound">Sound</a>
+        <a href="#spatial-audio">Spatial Audio</a>
         <a href="#assets">AssetManager</a>
         <a href="#lighting">Lighting</a>
         <a href="#shadows">Shadows</a>
@@ -483,7 +484,7 @@ window.<span class="fn">addEventListener</span>(<span class="st">"engineReady"</
 │   ├── buffer/                 <span class="cm">— Drawer, Sprite, SpriteSheet, SpriteAtlas</span>
 │   ├── cameras/                <span class="cm">— FixedCamera, WorldCamera</span>
 │   ├── input/                  <span class="cm">— InputManager</span>
-│   ├── audio/                  <span class="cm">— Sound, SoundManager</span>
+│   ├── audio/                  <span class="cm">— Sound, SoundManager, SpatialLoop</span>
 │   ├── animations/             <span class="cm">— Tween, Easing, Animation</span>
 │   ├── ui/                     <span class="cm">— UILayer, UIButton, UILabel, UIPanel, UICircle</span>
 │   ├── particles/              <span class="cm">— ParticleEmitter, Presets</span>
@@ -678,31 +679,47 @@ engine.<span class="fn">setFullScreen</span>();             <span class="cm">// 
         <h3>Shapes</h3>
         <pre><code>drawer.<span class="fn">rectangle</span>(position, size, filled, lineWidth, color, opacity, camera);
 drawer.<span class="fn">circle</span>(position, radius, startAngle, endAngle, filled, lineWidth, color, opacity, camera);
+drawer.<span class="fn">triangle</span>(position, size, filled, lineWidth, color, opacity, camera);
 drawer.<span class="fn">line</span>(point1, point2, lineWidth, color, opacity, camera);
+drawer.<span class="fn">dashedLine</span>(point1, point2, lineWidth, color, opacity, dashPattern, camera);
+drawer.<span class="fn">dashedPath</span>(points, lineWidth, color, opacity, dashPattern, camera);
+drawer.<span class="fn">polygon</span>(points, filled, lineWidth, color, opacity, camera);
 drawer.<span class="fn">gradient</span>(position, size, startPoint, stopPoint, startColor, stopColor, opacity, camera);</code></pre>
 
         <h3>Text</h3>
-        <pre><code>drawer.<span class="fn">text</span>(text, position, fontSize, font, style, color, opacity, camera);
+        <pre><code>drawer.<span class="fn">text</span>(text, position, fontSize, font, style, color, opacity, camera, align, baseline);
 drawer.<span class="fn">textWidth</span>(text, fontSize, font, style); <span class="cm">// returns number</span></code></pre>
+        <p><code>align</code>: 'left' (default), 'center', 'right'. <code>baseline</code>: 'alphabetic' (default), 'top', 'middle'.</p>
 
         <h3>Sprites</h3>
         <pre><code>drawer.<span class="fn">sprite</span>(sprite, position, opacity, camera);
 drawer.<span class="fn">spriteSheet</span>(spriteSheet, position, opacity, camera);
-drawer.<span class="fn">gameObject</span>(gameObject, opacity, camera);</code></pre>
+drawer.<span class="fn">spriteAtlas</span>(atlas, position, opacity, camera);
+drawer.<span class="fn">gameObject</span>(gameObject, opacity, camera);
+drawer.<span class="fn">image</span>(image, sx, sy, sw, sh, dx, dy, dw, dh);</code></pre>
 
         <h3>Transforms</h3>
         <pre><code>drawer.<span class="fn">drawRotated</span>(sprite, position, angle, opacity);
 drawer.<span class="fn">drawScaled</span>(sprite, position, scaleX, scaleY, opacity);
-drawer.<span class="fn">drawFlipped</span>(sprite, position, flipX, flipY, opacity);</code></pre>
+drawer.<span class="fn">drawFlipped</span>(sprite, position, flipX, flipY, opacity);
+drawer.<span class="fn">drawRegionRotated</span>(image, sx, sy, sw, sh, position, dw, dh, angle, opacity);</code></pre>
+
+        <h3>Camera Transform Block</h3>
+        <pre><code><span class="cm">// Draw in world space without passing camera to every call</span>
+drawer.<span class="fn">beginCamera</span>(camera);
+drawer.<span class="fn">rectangle</span>(<span class="kw">new</span> <span class="fn">Vec2</span>(<span class="nb">100</span>, <span class="nb">50</span>), <span class="kw">new</span> <span class="fn">Size</span>(<span class="nb">32</span>, <span class="nb">32</span>), <span class="kw">true</span>, <span class="nb">1</span>, <span class="st">'red'</span>);
+drawer.<span class="fn">line</span>(<span class="kw">new</span> <span class="fn">Vec2</span>(<span class="nb">0</span>,<span class="nb">0</span>), <span class="kw">new</span> <span class="fn">Vec2</span>(<span class="nb">100</span>,<span class="nb">100</span>), <span class="nb">2</span>, <span class="st">'yellow'</span>);
+drawer.<span class="fn">endCamera</span>();</code></pre>
 
         <h3>Utility</h3>
         <pre><code>drawer.<span class="fn">clearWithColor</span>(<span class="st">'#000'</span>);
 drawer.<span class="fn">clear</span>();</code></pre>
 
         <div class="note">
-          When passing a <code>camera</code> parameter, coordinates are in world
-          space and the drawer applies the camera offset automatically. Without
-          a camera, coordinates are in screen space.
+          Use <code>beginCamera/endCamera</code> for batched world-space drawing
+          — all draw calls inside the block use world coordinates with zoom and offset
+          applied via the canvas transform. Alternatively, pass a <code>camera</code>
+          parameter to individual draw calls for per-call offset (no zoom support).
         </div>
 
         <!-- ===== INPUT ===== -->
@@ -1213,8 +1230,16 @@ drawer.<span class="fn">text</span>(<span class="st">'HUD'</span>, <span class="
         <h2 id="tilemap">Tilemap</h2>
 
         <pre><code><span class="kw">var</span> tileset = <span class="kw">new</span> <span class="fn">Tileset</span>(<span class="st">'tileset.png'</span>, <span class="nb">32</span>, <span class="nb">32</span>);
+tileset.displayWidth = <span class="nb">48</span>;  <span class="cm">// render at different size than source</span>
+tileset.displayHeight = <span class="nb">48</span>;
+
 <span class="kw">var</span> mapData = [[<span class="nb">0</span>,<span class="nb">1</span>,<span class="nb">2</span>], [<span class="nb">3</span>,<span class="nb">4</span>,<span class="nb">5</span>]];
-<span class="kw">var</span> tilemap = <span class="kw">new</span> <span class="fn">Tilemap</span>(tileset, mapData, cols, rows);</code></pre>
+<span class="kw">var</span> tilemap = <span class="kw">new</span> <span class="fn">Tilemap</span>(tileset, mapData, cols, rows);
+
+<span class="cm">// Per-tile rotation (for auto-tiling, road curves, etc.)</span>
+tilemap.<span class="fn">setTile</span>(<span class="nb">5</span>, <span class="nb">3</span>, <span class="nb">7</span>);               <span class="cm">// set tile ID</span>
+tilemap.<span class="fn">setTileRotation</span>(<span class="nb">5</span>, <span class="nb">3</span>, <span class="nb">90</span>);      <span class="cm">// rotate 90°</span>
+tilemap.<span class="fn">setTileSource</span>(<span class="nb">5</span>, <span class="nb">3</span>, <span class="nb">0</span>, <span class="nb">0</span>, <span class="nb">512</span>, <span class="nb">512</span>); <span class="cm">// custom source rect</span></code></pre>
 
         <table>
           <tr>
@@ -1223,7 +1248,27 @@ drawer.<span class="fn">text</span>(<span class="st">'HUD'</span>, <span class="
           </tr>
           <tr>
             <td>draw(drawer, camera)</td>
-            <td>Render visible tiles (auto camera culling)</td>
+            <td>Render visible tiles (zoom-aware culling, WorldCamera support)</td>
+          </tr>
+          <tr>
+            <td>setTile(col, row, tileId)</td>
+            <td>Set tile ID at grid position</td>
+          </tr>
+          <tr>
+            <td>setTileRotation(col, row, angleDeg)</td>
+            <td>Set per-tile rotation (0, 90, 180, 270). 0 removes it.</td>
+          </tr>
+          <tr>
+            <td>clearTileRotation(col, row)</td>
+            <td>Clear rotation for a tile</td>
+          </tr>
+          <tr>
+            <td>setTileSource(col, row, sx, sy, sw, sh)</td>
+            <td>Override source rect (e.g. for multi-tile sprites)</td>
+          </tr>
+          <tr>
+            <td>clearTileSource(col, row)</td>
+            <td>Revert to tileset grid lookup</td>
           </tr>
           <tr>
             <td>setCollisionLayer(data)</td>
@@ -1250,6 +1295,13 @@ drawer.<span class="fn">text</span>(<span class="st">'HUD'</span>, <span class="
             <td>Returns <code>Size</code> of the full map in pixels</td>
           </tr>
         </table>
+
+        <div class="note">
+          <code>displayWidth/displayHeight</code> on the Tileset allow rendering tiles at a
+          different size than the source (e.g. 256px source tiles drawn at 48px).
+          Per-tile rotation uses <code>ctx.save/translate/rotate/restore</code> only for
+          rotated tiles — unrotated tiles use the fast direct <code>drawImage</code> path.
+        </div>
 
         <!-- ===== PARTICLES ===== -->
         <h2 id="particles">Particles</h2>
@@ -1370,6 +1422,58 @@ engine.sound.<span class="fn">playSFX</span>(jumpSound);    <span class="cm">// 
 engine.sound.<span class="fn">muteAll</span>();
 engine.sound.<span class="fn">unmuteAll</span>();</code></pre>
 
+        <!-- ===== SPATIAL AUDIO ===== -->
+        <h2 id="spatial-audio">Spatial Audio</h2>
+
+        <p>
+          Distance-based audio for world-space sounds. Volume attenuates with
+          distance from camera using quadratic falloff. Zoom affects perceived
+          distance (zoomed in = louder).
+        </p>
+
+        <h3>One-shot Spatial SFX</h3>
+        <pre><code><span class="cm">// Play a sound at a world position — auto volume from distance</span>
+engine.sound.<span class="fn">playSpatialSFX</span>(sound, worldX, worldY, camera, maxDistance);
+
+<span class="cm">// Get the volume a sound would have at a position (0-1)</span>
+<span class="kw">var</span> vol = engine.sound.<span class="fn">getSpatialVolume</span>(worldX, worldY, camera, maxDistance);</code></pre>
+
+        <table>
+          <tr><th>Parameter</th><th>Description</th></tr>
+          <tr><td>sound</td><td>Sound object to play</td></tr>
+          <tr><td>worldX, worldY</td><td>Sound source world position</td></tr>
+          <tr><td>camera</td><td>Camera with location and getZoom()</td></tr>
+          <tr><td>maxDistance</td><td>Max audible distance in world pixels (default 500)</td></tr>
+        </table>
+
+        <h3>SpatialLoop — Persistent Looping Sounds</h3>
+        <p>
+          For continuous sounds (engine hum, factory noise, ambient). Smoothly
+          lerps volume each frame to avoid audio clicks.
+        </p>
+        <pre><code><span class="kw">var</span> loop = <span class="kw">new</span> <span class="fn">SpatialLoop</span>(<span class="st">'engine.ogg'</span>, <span class="nb">0.3</span>); <span class="cm">// path, baseVolume (0-1)</span>
+loop.<span class="fn">start</span>();                                   <span class="cm">// begin looping (starts silent)</span>
+loop.<span class="fn">setPosition</span>(worldX, worldY);                <span class="cm">// update source position</span>
+
+<span class="cm">// Call every frame to update volume from distance:</span>
+loop.<span class="fn">updateVolume</span>(camera, engine.sound, maxDistance, dt);
+
+loop.<span class="fn">isSilent</span>();                                <span class="cm">// true if volume &lt; 0.005</span>
+loop.<span class="fn">stop</span>();                                    <span class="cm">// stop looping</span></code></pre>
+
+        <table>
+          <tr><th>Property</th><th>Description</th></tr>
+          <tr><td>baseVolume</td><td>Maximum volume at closest range (0-1, default 0.3)</td></tr>
+          <tr><td>worldX, worldY</td><td>Current world position</td></tr>
+          <tr><td>playing</td><td>Whether the loop is active</td></tr>
+        </table>
+
+        <div class="note">
+          <code>baseVolume</code> caps the maximum volume even at point-blank range.
+          A truck engine at <code>baseVolume = 0.15</code> will never exceed 15% volume.
+          The spatial calculation is a multiplier: <code>finalVolume = spatialFalloff * baseVolume</code>.
+        </div>
+
         <!-- ===== ASSETS ===== -->
         <h2 id="assets">AssetManager</h2>
 
@@ -1381,6 +1485,7 @@ engine.sound.<span class="fn">unmuteAll</span>();</code></pre>
         <pre><code>engine.assets
     .<span class="fn">loadImage</span>(<span class="st">'player'</span>, <span class="st">'sprites/player.png'</span>)
     .<span class="fn">loadSound</span>(<span class="st">'jump'</span>, <span class="st">'audio/jump.mp3'</span>)
+    .<span class="fn">loadJSON</span>(<span class="st">'mapData'</span>, <span class="st">'maps/level1.json'</span>)
     .<span class="fn">onProgress</span>(<span class="kw">function</span>(loaded, total) { })
     .<span class="fn">onComplete</span>(<span class="kw">function</span>() { engine.<span class="fn">start</span>(); });
 
@@ -1388,7 +1493,8 @@ engine.assets.<span class="fn">startLoading</span>();
 
 <span class="cm">// Later:</span>
 <span class="kw">var</span> img = engine.assets.<span class="fn">getImage</span>(<span class="st">'player'</span>);
-<span class="kw">var</span> snd = engine.assets.<span class="fn">getSound</span>(<span class="st">'jump'</span>);</code></pre>
+<span class="kw">var</span> snd = engine.assets.<span class="fn">getSound</span>(<span class="st">'jump'</span>);
+<span class="kw">var</span> data = engine.assets.<span class="fn">getJSON</span>(<span class="st">'mapData'</span>); <span class="cm">// parsed Object</span></code></pre>
 
         <!-- ===== LIGHTING ===== -->
         <h2 id="lighting">Lighting</h2>
@@ -1403,12 +1509,20 @@ lighting.ambientAlpha = <span class="nb">0.85</span>;   <span class="cm">// dark
 lighting.ambientColor = <span class="st">'black'</span>;
 
 <span class="cm">// Add lights</span>
+<span class="cm">// Point light (circle)</span>
 <span class="kw">var</span> torch = <span class="kw">new</span> <span class="fn">LightSpot</span>(<span class="kw">new</span> <span class="fn">Vec2</span>(<span class="nb">200</span>, <span class="nb">150</span>), <span class="kw">new</span> <span class="fn">RGB</span>(<span class="nb">255</span>, <span class="nb">160</span>, <span class="nb">50</span>), <span class="nb">180</span>, <span class="nb">0.9</span>);
-torch.flicker = <span class="nb">0.25</span>;           <span class="cm">// flicker amount 0-1</span>
+torch.flicker = <span class="nb">0.25</span>;
 lighting.<span class="fn">addLightSpot</span>(torch);
 
+<span class="cm">// Cone light (directional, e.g. headlight)</span>
+<span class="kw">var</span> headlight = <span class="kw">new</span> <span class="fn">LightSpot</span>(<span class="kw">new</span> <span class="fn">Vec2</span>(<span class="nb">100</span>, <span class="nb">100</span>), <span class="kw">new</span> <span class="fn">RGB</span>(<span class="nb">255</span>, <span class="nb">240</span>, <span class="nb">200</span>), <span class="nb">40</span>, <span class="nb">0.5</span>);
+headlight.shape = <span class="st">'cone'</span>;        <span class="cm">// 'circle' (default) or 'cone'</span>
+headlight.direction = <span class="nb">0</span>;         <span class="cm">// radians — direction cone points</span>
+headlight.spread = Math.PI / <span class="nb">6</span>; <span class="cm">// half-angle (60° total cone)</span>
+lighting.<span class="fn">addLightSpot</span>(headlight);
+
 <span class="cm">// In OnUpdate (draw AFTER scene, BEFORE UI):</span>
-lighting.<span class="fn">draw</span>(elapsedTime, camera);</code></pre>
+lighting.<span class="fn">draw</span>(elapsedTime, camera); <span class="cm">// supports WorldCamera zoom</span></code></pre>
 
         <table>
           <tr><th>LightSpot Property</th><th>Description</th></tr>
@@ -1418,6 +1532,9 @@ lighting.<span class="fn">draw</span>(elapsedTime, camera);</code></pre>
           <tr><td>intensity</td><td>Brightness 0-1 (default 1.0)</td></tr>
           <tr><td>flicker</td><td>Flicker amount 0-1 (default 0)</td></tr>
           <tr><td>active</td><td>Enable/disable (default true)</td></tr>
+          <tr><td>shape</td><td>'circle' (default) or 'cone' (directional triangle)</td></tr>
+          <tr><td>direction</td><td>Cone direction in radians (0 = right)</td></tr>
+          <tr><td>spread</td><td>Cone half-angle in radians (default π/3)</td></tr>
         </table>
 
         <table>
@@ -1425,7 +1542,7 @@ lighting.<span class="fn">draw</span>(elapsedTime, camera);</code></pre>
           <tr><td>addLightSpot(light)</td><td>Add a light source</td></tr>
           <tr><td>removeLightSpot(light)</td><td>Remove a light source</td></tr>
           <tr><td>clearLights()</td><td>Remove all lights</td></tr>
-          <tr><td>draw(elapsedTime, camera?)</td><td>Render the lighting overlay</td></tr>
+          <tr><td>draw(elapsedTime, camera?)</td><td>Render lighting (zoom-aware, frustum culled, skips if ambientAlpha &lt; 0.01)</td></tr>
         </table>
 
         <!-- ===== SHADOWS ===== -->
@@ -1442,6 +1559,7 @@ shadows.lightAngle   = <span class="nb">225</span>;             <span class="cm"
 shadows.shadowLength = <span class="nb">80</span>;              <span class="cm">// projection distance in pixels</span>
 shadows.shadowOpacity = <span class="nb">0.4</span>;            <span class="cm">// composite alpha</span>
 shadows.blur          = <span class="nb">4</span>;              <span class="cm">// soft shadow blur radius</span>
+shadows.simple        = <span class="kw">false</span>;           <span class="cm">// true = fast flat shadows (no offscreen canvas)</span>
 
 <span class="cm">// Add casters</span>
 <span class="kw">var</span> crate = <span class="kw">new</span> <span class="fn">ShadowCaster</span>(
@@ -1467,7 +1585,8 @@ shadows.<span class="fn">draw</span>(camera);</code></pre>
           <tr><td>shadowLength</td><td>Base projection distance in pixels (default 40)</td></tr>
           <tr><td>shadowOpacity</td><td>Alpha when compositing onto canvas (default 0.4)</td></tr>
           <tr><td>shadowColor</td><td>Shadow fill color (default 'black')</td></tr>
-          <tr><td>blur</td><td>Blur radius in pixels (default 4)</td></tr>
+          <tr><td>blur</td><td>Blur radius in pixels (default 4, ignored in simple mode)</td></tr>
+          <tr><td>simple</td><td>Fast flat shadows mode — no offscreen canvas/blur (default false)</td></tr>
         </table>
 
         <table>
@@ -1475,22 +1594,24 @@ shadows.<span class="fn">draw</span>(camera);</code></pre>
           <tr><td>addCaster(caster)</td><td>Add a shadow caster</td></tr>
           <tr><td>removeCaster(caster)</td><td>Remove a shadow caster</td></tr>
           <tr><td>clearCasters()</td><td>Remove all casters</td></tr>
-          <tr><td>draw(camera?)</td><td>Render all shadows (call before drawing objects)</td></tr>
+          <tr><td>draw(camera?)</td><td>Render shadows (zoom-aware, frustum culled, skips if opacity &lt; 0.01)</td></tr>
         </table>
 
         <table>
           <tr><th>ShadowCaster Property</th><th>Description</th></tr>
           <tr><td>position</td><td>Vec2 world position (shared reference for auto-tracking)</td></tr>
           <tr><td>size</td><td>Size footprint</td></tr>
-          <tr><td>type</td><td>'rectangle' (projected hexagon) or 'ellipse' (rounded)</td></tr>
+          <tr><td>type</td><td>'rectangle' or 'ellipse'</td></tr>
           <tr><td>heightScale</td><td>Shadow length multiplier (default 1.0)</td></tr>
+          <tr><td>rotation</td><td>Rotation in radians (default 0). For rotating objects like vehicles.</td></tr>
           <tr><td>active</td><td>Enable/disable (default true)</td></tr>
         </table>
 
         <div class="note">
-          Pass a <strong>shared reference</strong> to a GameObject's position when creating
-          a ShadowCaster. The shadow will automatically follow the object as it moves,
-          with no manual sync needed.
+          <strong>Simple mode</strong> (<code>simple = true</code>) draws flat shadow shapes
+          directly via the drawer — no offscreen canvas, no blur, much faster for many casters.
+          Use for games with lots of dynamic objects (vehicles, units).
+          The standard mode uses an offscreen canvas with projected hexagons/ellipses and Gaussian blur.
         </div>
 
         <!-- ===== DEBUG ===== -->
@@ -1596,31 +1717,43 @@ map.<span class="fn">setTileSprite</span>(<span class="nb">1</span>, roadImg);  
         <!-- ===== PATHFINDER ===== -->
         <h2 id="pathfinder">PathFinder</h2>
 
-        <p>Static A* pathfinding for isometric maps. Respects walkability and height constraints.</p>
+        <p>Generic A* pathfinding that works with any grid-based map. Supports both
+          IsometricMap and rectangular grids. The grid must have <code>cols</code>,
+          <code>rows</code>, and <code>isWalkable(col, row)</code>.</p>
 
         <table>
           <tr><th>Method</th><th>Description</th></tr>
           <tr>
-            <td>PathFinder.findPath(map, startCol, startRow, endCol, endRow)</td>
-            <td>Returns array of <code>{col, row}</code> waypoints (excluding start). Empty array if no path found</td>
+            <td>PathFinder.findPath(grid, startCol, startRow, endCol, endRow, options?)</td>
+            <td>Returns array of <code>{col, row}</code> waypoints. Empty array if no path found</td>
           </tr>
         </table>
 
-        <h3>Cost Model</h3>
+        <h3>Options</h3>
+        <table>
+          <tr><th>Option</th><th>Default</th><th>Description</th></tr>
+          <tr><td>allowStart</td><td>false</td><td>Allow start tile even if not walkable (e.g. building)</td></tr>
+          <tr><td>allowEnd</td><td>false</td><td>Allow end tile even if not walkable</td></tr>
+          <tr><td>includeStart</td><td>true</td><td>Include start position in returned path</td></tr>
+        </table>
+
+        <h3>Grid Interface</h3>
+        <p>The grid object must have:</p>
         <ul>
-          <li>4-directional movement (N, S, E, W on grid)</li>
-          <li>Flat movement cost: <code>1.0</code></li>
-          <li>Height change cost: <code>1.5</code></li>
-          <li>Movement blocked if height difference &gt; 1 or tile is unwalkable</li>
-          <li>Manhattan distance heuristic</li>
+          <li><code>cols</code>, <code>rows</code> — grid dimensions</li>
+          <li><code>isWalkable(col, row)</code> — returns boolean</li>
+          <li><code>canMoveTo(fromCol, fromRow, toCol, toRow)</code> — optional, overrides isWalkable for neighbors</li>
+          <li><code>getHeight(col, row)</code> — optional, adds height-based cost (1.5x for elevation changes)</li>
+          <li><code>inBounds(col, row)</code> — optional, defaults to 0..cols-1, 0..rows-1</li>
         </ul>
 
-        <pre><code><span class="kw">var</span> map = <span class="kw">new</span> <span class="fn">IsometricMap</span>(<span class="nb">20</span>, <span class="nb">20</span>, <span class="nb">64</span>, <span class="nb">32</span>, <span class="nb">16</span>);
-<span class="cm">// ... populate tiles, heightMap, collisionMap ...</span>
-
-<span class="kw">var</span> path = <span class="fn">PathFinder</span>.<span class="fn">findPath</span>(map, <span class="nb">0</span>, <span class="nb">0</span>, <span class="nb">10</span>, <span class="nb">10</span>);
+        <pre><code><span class="cm">// Works with any grid that has isWalkable</span>
+<span class="kw">var</span> path = <span class="fn">PathFinder</span>.<span class="fn">findPath</span>(myGrid, <span class="nb">0</span>, <span class="nb">0</span>, <span class="nb">10</span>, <span class="nb">10</span>, {
+    allowStart: <span class="kw">true</span>,   <span class="cm">// start at a building tile</span>
+    allowEnd: <span class="kw">true</span>,     <span class="cm">// end at a building tile</span>
+    includeStart: <span class="kw">true</span>
+});
 <span class="kw">if</span> (path.length > <span class="nb">0</span>) {
-    <span class="cm">// Walk each waypoint: path[i].col, path[i].row</span>
     <span class="kw">for</span> (<span class="kw">var</span> i = <span class="nb">0</span>; i < path.length; i++) {
         console.<span class="fn">log</span>(path[i].col, path[i].row);
     }

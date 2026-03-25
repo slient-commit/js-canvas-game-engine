@@ -67,11 +67,22 @@ class Lighting {
         var w = this._shadowCanvas.width;
         var h = this._shadowCanvas.height;
 
+        // Camera zoom support
+        var zoom = (camera && typeof camera.getZoom === 'function') ? camera.getZoom() : 1;
+        var useWorldCamera = camera && camera.location && typeof camera.getZoom === 'function';
+        var hw = camera ? camera.cameraSize.width / 2 : 0;
+        var hh = camera ? camera.cameraSize.height / 2 : 0;
+
         // Fill with ambient darkness
         ctx.globalCompositeOperation = 'source-over';
         ctx.globalAlpha = 1;
         ctx.fillStyle = this.ambientColor;
         ctx.fillRect(0, 0, w, h);
+
+        // Skip drawing if fully transparent (daytime optimization)
+        if (this.ambientAlpha < 0.01) {
+            return;
+        }
 
         // Cut light holes using destination-out
         ctx.globalCompositeOperation = 'destination-out';
@@ -83,14 +94,20 @@ class Lighting {
             var lx = light.position.X;
             var ly = light.position.Y;
 
-            // Apply camera offset
-            if (camera && camera.addOffset) {
+            // Apply camera transform (zoom-aware or legacy offset)
+            if (useWorldCamera) {
+                lx = hw + (lx - camera.location.X) * zoom;
+                ly = hh + (ly - camera.location.Y) * zoom;
+            } else if (camera && camera.addOffset) {
                 lx += camera.offset.X;
                 ly += camera.offset.Y;
             }
 
-            // Compute effective radius with flicker
-            var radius = light.radius;
+            // Compute effective radius with flicker + zoom
+            var radius = light.radius * zoom;
+
+            // Frustum culling — skip lights fully off-screen
+            if (lx + radius < 0 || lx - radius > w || ly + radius < 0 || ly - radius > h) continue;
             if (light.flicker > 0) {
                 var f1 = Math.sin(this._time * 8.7 + light._flickerOffset) * 0.5;
                 var f2 = Math.sin(this._time * 13.3 + light._flickerOffset * 2.1) * 0.3;
@@ -105,9 +122,7 @@ class Lighting {
             grad.addColorStop(1, 'rgba(0,0,0,0)');
 
             ctx.fillStyle = grad;
-            ctx.beginPath();
-            ctx.arc(lx, ly, radius, 0, Math.PI * 2);
-            ctx.fill();
+            this._fillLightShape(ctx, light, lx, ly, radius);
         }
 
         // Add colored light glow using lighter blending
@@ -117,18 +132,24 @@ class Lighting {
             var light = this.lights[i];
             if (!light.active) continue;
 
-            // Skip pure white lights (no color tint needed)
             if (light.color.red === 255 && light.color.green === 255 && light.color.blue === 255) continue;
 
             var lx = light.position.X;
             var ly = light.position.Y;
 
-            if (camera && camera.addOffset) {
+            if (useWorldCamera) {
+                lx = hw + (lx - camera.location.X) * zoom;
+                ly = hh + (ly - camera.location.Y) * zoom;
+            } else if (camera && camera.addOffset) {
                 lx += camera.offset.X;
                 ly += camera.offset.Y;
             }
 
-            var radius = light.radius;
+            var radius = light.radius * zoom;
+
+            // Frustum culling
+            if (lx + radius < 0 || lx - radius > w || ly + radius < 0 || ly - radius > h) continue;
+
             if (light.flicker > 0) {
                 var f1 = Math.sin(this._time * 8.7 + light._flickerOffset) * 0.5;
                 var f2 = Math.sin(this._time * 13.3 + light._flickerOffset * 2.1) * 0.3;
@@ -146,8 +167,7 @@ class Lighting {
             grad.addColorStop(1, 'rgba(' + r + ',' + g + ',' + b + ',0)');
 
             ctx.fillStyle = grad;
-            ctx.beginPath();
-            ctx.arc(lx, ly, radius * 0.8, 0, Math.PI * 2);
+            this._fillLightShape(ctx, light, lx, ly, radius * 0.8);
             ctx.fill();
         }
 
@@ -158,5 +178,29 @@ class Lighting {
         mainCtx.globalAlpha = this.ambientAlpha;
         mainCtx.drawImage(this._shadowCanvas, 0, 0);
         mainCtx.restore();
+    }
+
+    /**
+     * Fill a light shape — circle or cone (triangle)
+     * @param {CanvasRenderingContext2D} ctx
+     * @param {LightSpot} light
+     * @param {number} lx - screen X
+     * @param {number} ly - screen Y
+     * @param {number} radius - effective radius (with zoom/flicker applied)
+     */
+    _fillLightShape(ctx, light, lx, ly, radius) {
+        ctx.beginPath();
+        if (light.shape === 'cone') {
+            // Triangle/cone: starts at position, fans out in direction
+            var dir = light.direction;
+            var spread = light.spread;
+            ctx.moveTo(lx, ly);
+            ctx.arc(lx, ly, radius, dir - spread, dir + spread);
+            ctx.closePath();
+        } else {
+            // Default circle
+            ctx.arc(lx, ly, radius, 0, Math.PI * 2);
+        }
+        ctx.fill();
     }
 }

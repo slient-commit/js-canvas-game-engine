@@ -1,18 +1,44 @@
 class PathFinder {
 
     /**
-     * A* pathfinding on an IsometricMap
-     * @param {IsometricMap} map
+     * A* pathfinding on any grid-based map.
+     *
+     * Works with both IsometricMap and any rectangular grid object.
+     * The grid must have:
+     *   - cols, rows (number)
+     *   - isWalkable(col, row) → boolean
+     * Optionally:
+     *   - canMoveTo(fromCol, fromRow, toCol, toRow) → boolean  (overrides isWalkable for neighbors)
+     *   - getHeight(col, row) → number  (adds height-based cost)
+     *   - inBounds(col, row) → boolean  (defaults to 0..cols-1, 0..rows-1)
+     *
+     * @param {Object} grid - map object with cols, rows, isWalkable
      * @param {number} startCol
      * @param {number} startRow
      * @param {number} endCol
      * @param {number} endRow
-     * @returns {Array} array of {col, row} waypoints (excludes start), empty if no path
+     * @param {Object} [options]
+     * @param {boolean} [options.allowStart=false] - allow start tile even if not walkable
+     * @param {boolean} [options.allowEnd=false]   - allow end tile even if not walkable
+     * @param {boolean} [options.includeStart=true] - include start in returned path
+     * @returns {Array} array of {col, row} waypoints, empty if no path
      */
-    static findPath(map, startCol, startRow, endCol, endRow) {
-        if (!map.inBounds(startCol, startRow) || !map.inBounds(endCol, endRow)) return [];
-        if (!map.isWalkable(endCol, endRow)) return [];
-        if (startCol === endCol && startRow === endRow) return [];
+    static findPath(grid, startCol, startRow, endCol, endRow, options) {
+        options = options || {};
+        var allowStart = options.allowStart || false;
+        var allowEnd = options.allowEnd || false;
+        var includeStart = options.includeStart !== undefined ? options.includeStart : true;
+
+        var inBounds = grid.inBounds
+            ? function(c, r) { return grid.inBounds(c, r); }
+            : function(c, r) { return c >= 0 && c < grid.cols && r >= 0 && r < grid.rows; };
+
+        if (!inBounds(startCol, startRow) || !inBounds(endCol, endRow)) return [];
+        if (startCol === endCol && startRow === endRow) return includeStart ? [{ col: startCol, row: startRow }] : [];
+
+        // Check end tile walkability
+        var endWalkable = grid.isWalkable ? grid.isWalkable(endCol, endRow) : true;
+        if (!endWalkable && !allowEnd) return [];
 
         var openSet = [];
         var closedSet = {};
@@ -34,20 +60,28 @@ class PathFinder {
             { dc: -1, dr: 0 }
         ];
 
-        var maxIterations = map.cols * map.rows * 2;
+        var hasCanMoveTo = typeof grid.canMoveTo === 'function';
+        var hasGetHeight = typeof grid.getHeight === 'function';
+
+        var maxIterations = grid.cols * grid.rows * 2;
         var iterations = 0;
 
         while (openSet.length > 0 && iterations < maxIterations) {
             iterations++;
 
-            openSet.sort(function(a, b) { return a.f - b.f; });
-            var current = openSet.shift();
+            // Find lowest fScore in open set
+            var bestIdx = 0;
+            for (var i = 1; i < openSet.length; i++) {
+                if (openSet[i].f < openSet[bestIdx].f) bestIdx = i;
+            }
+            var current = openSet[bestIdx];
             var currentKey = current.col + ',' + current.row;
 
             if (current.col === endCol && current.row === endRow) {
-                return PathFinder._reconstructPath(cameFrom, current);
+                return PathFinder._reconstructPath(cameFrom, current, includeStart);
             }
 
+            openSet.splice(bestIdx, 1);
             closedSet[currentKey] = true;
 
             for (var i = 0; i < dirs.length; i++) {
@@ -56,10 +90,27 @@ class PathFinder {
                 var neighborKey = nc + ',' + nr;
 
                 if (closedSet[neighborKey]) continue;
-                if (!map.canMoveTo(current.col, current.row, nc, nr)) continue;
+                if (!inBounds(nc, nr)) continue;
 
-                var heightDiff = Math.abs(map.getHeight(nc, nr) - map.getHeight(current.col, current.row));
-                var moveCost = heightDiff > 0 ? 1.5 : 1.0;
+                // Check if we can move to this neighbor
+                var isEnd = (nc === endCol && nr === endRow);
+                if (hasCanMoveTo) {
+                    if (!grid.canMoveTo(current.col, current.row, nc, nr)) {
+                        if (!(isEnd && allowEnd)) continue;
+                    }
+                } else if (grid.isWalkable) {
+                    if (!grid.isWalkable(nc, nr)) {
+                        if (!(isEnd && allowEnd)) continue;
+                    }
+                }
+
+                // Calculate move cost
+                var moveCost = 1.0;
+                if (hasGetHeight) {
+                    var heightDiff = Math.abs(grid.getHeight(nc, nr) - grid.getHeight(current.col, current.row));
+                    if (heightDiff > 0) moveCost = 1.5;
+                }
+
                 var tentativeG = gScore[currentKey] + moveCost;
 
                 if (gScore[neighborKey] !== undefined && tentativeG >= gScore[neighborKey]) continue;
@@ -89,7 +140,7 @@ class PathFinder {
         return Math.abs(col1 - col2) + Math.abs(row1 - row2);
     }
 
-    static _reconstructPath(cameFrom, current) {
+    static _reconstructPath(cameFrom, current, includeStart) {
         var path = [{ col: current.col, row: current.row }];
         var key = current.col + ',' + current.row;
         while (cameFrom[key]) {
@@ -97,7 +148,9 @@ class PathFinder {
             key = current.col + ',' + current.row;
             path.unshift({ col: current.col, row: current.row });
         }
-        path.shift(); // remove start position
+        if (!includeStart) {
+            path.shift();
+        }
         return path;
     }
 }

@@ -58,6 +58,66 @@ class SoundManager {
     }
 
     /**
+     * Play a sound effect with spatial volume based on distance from camera.
+     * Sounds far from the camera center are quieter; zoom affects perceived distance.
+     * @param {Sound} sound
+     * @param {number} worldX - sound source world X
+     * @param {number} worldY - sound source world Y
+     * @param {Camera} camera - must have location, cameraSize, getZoom()
+     * @param {number} [maxDistance=500] - max audible distance in world pixels
+     * @returns {boolean} true if sound was played (within range)
+     */
+    playSpatialSFX(sound, worldX, worldY, camera, maxDistance) {
+        if (this.muted) return false;
+        if (!camera || !camera.location) {
+            this.playSFX(sound);
+            return true;
+        }
+        maxDistance = maxDistance || 500;
+
+        var dx = worldX - camera.location.X;
+        var dy = worldY - camera.location.Y;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+
+        // Zoom makes things feel closer (zoomed in = louder)
+        var zoom = (typeof camera.getZoom === 'function') ? camera.getZoom() : 1;
+        var effectiveDist = dist / zoom;
+
+        if (effectiveDist > maxDistance) return false;
+
+        var volume = 1 - (effectiveDist / maxDistance);
+        volume = volume * volume; // quadratic falloff for natural sound
+        volume *= this.masterVolume * this.sfxVolume;
+        volume = Math.max(0, Math.min(1, volume));
+
+        sound.audioObject.volume = volume;
+        sound.play();
+        return true;
+    }
+
+    /**
+     * Compute spatial volume for a world position relative to camera.
+     * Returns 0 if out of range, 0-1 otherwise.
+     * @param {number} worldX
+     * @param {number} worldY
+     * @param {Camera} camera
+     * @param {number} [maxDistance=500]
+     * @returns {number} volume 0-1
+     */
+    getSpatialVolume(worldX, worldY, camera, maxDistance) {
+        if (!camera || !camera.location) return this.masterVolume * this.sfxVolume;
+        maxDistance = maxDistance || 500;
+        var dx = worldX - camera.location.X;
+        var dy = worldY - camera.location.Y;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        var zoom = (typeof camera.getZoom === 'function') ? camera.getZoom() : 1;
+        var effectiveDist = dist / zoom;
+        if (effectiveDist > maxDistance) return 0;
+        var vol = 1 - (effectiveDist / maxDistance);
+        return vol * vol * this.masterVolume * this.sfxVolume;
+    }
+
+    /**
      * Stop current music
      */
     stopMusic() {

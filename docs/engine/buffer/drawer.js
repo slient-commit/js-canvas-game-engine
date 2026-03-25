@@ -48,10 +48,8 @@ class Drawer {
      * @param {double} dh Distination Height
      */
     image(image, sx, sy, sw, sh, dx, dy, dw, dh) {
-        var ctxTemp = this.ctx;
-        image.onload = function() {
-            ctxTemp.drawImage(image, sx, sy, sw, sh, dx, dy, dw, dh);
-        };
+        if (!image) return;
+        this.ctx.drawImage(image, sx, sy, sw, sh, dx, dy, dw, dh);
     }
 
     /**
@@ -92,11 +90,13 @@ class Drawer {
      * @param {string} text 
      * @param {Position} position 
      */
-    text(text, position, fontSize = 14, font = 'serif', style = 'normal', color = 'black', opacity = 1, camera = null) {
+    text(text, position, fontSize = 14, font = 'serif', style = 'normal', color = 'black', opacity = 1, camera = null, align = 'left', baseline = 'alphabetic') {
         this.ctx.font = `${style} ${fontSize}px ${font}`;
         this.ctx.fillStyle = color;
         this.ctx.strokeStyle = color;
         this.ctx.globalAlpha = opacity;
+        this.ctx.textAlign = align;
+        this.ctx.textBaseline = baseline;
         let lines = text.split('\n');
         if (camera !== null) {
             camera.updateMaxPosition();
@@ -109,6 +109,8 @@ class Drawer {
                     } else
                         this.ctx.fillText(text, position.X + camera.offset.X, position.Y + camera.offset.Y);
                     this.ctx.globalAlpha = 1.0;
+                    this.ctx.textAlign = 'left';
+                    this.ctx.textBaseline = 'alphabetic';
                     return true;
                 }
             }
@@ -119,6 +121,8 @@ class Drawer {
         } else
             this.ctx.fillText(text, position.X, position.Y);
         this.ctx.globalAlpha = 1.0;
+        this.ctx.textAlign = 'left';
+        this.ctx.textBaseline = 'alphabetic';
         return true;
     }
 
@@ -238,11 +242,37 @@ class Drawer {
     }
 
     /**
+     * Begin a camera-transformed drawing block.
+     * Applies zoom + offset so subsequent draw calls use world coordinates
+     * without needing a camera parameter. Pair with endCamera().
+     * @param {Camera} camera
+     */
+    beginCamera(camera) {
+        if (!camera) return;
+        this._cameraActive = true;
+        if (typeof camera.applyTransform === 'function') {
+            camera.applyTransform(this.ctx);
+            var off = camera.getOffset();
+            this.ctx.translate(off.X, off.Y);
+        }
+    }
+
+    /**
+     * End a camera-transformed drawing block started by beginCamera().
+     */
+    endCamera() {
+        if (this._cameraActive) {
+            this.ctx.restore();
+            this._cameraActive = false;
+        }
+    }
+
+    /**
      * Draw a line between two points
-     * @param {Point} point1 
-     * @param {Point} point2 
-     * @param {Int} lineWidth 
-     * @param {string} color 
+     * @param {Point} point1
+     * @param {Point} point2
+     * @param {Int} lineWidth
+     * @param {string} color
      */
     line(point1, point2, lineWidth = 5, color = 'red', opacity = 1, camera = null) {
         // set line stroke and line width
@@ -269,6 +299,69 @@ class Drawer {
         this.ctx.moveTo(point1.X, point1.Y);
         this.ctx.lineTo(point2.X, point2.Y);
         this.ctx.stroke();
+        this.ctx.globalAlpha = 1.0;
+        return true;
+    }
+
+    /**
+     * Draw a dashed line between two points
+     * @param {Point} point1
+     * @param {Point} point2
+     * @param {number} lineWidth
+     * @param {string} color
+     * @param {number} opacity
+     * @param {number[]} dashPattern - e.g. [6, 3] for 6px dash, 3px gap
+     * @param {Camera} camera
+     */
+    dashedLine(point1, point2, lineWidth = 2, color = 'red', opacity = 1, dashPattern = [6, 3], camera = null) {
+        this.ctx.strokeStyle = color;
+        this.ctx.lineWidth = lineWidth;
+        this.ctx.globalAlpha = opacity;
+        this.ctx.setLineDash(dashPattern);
+
+        var x1 = point1.X, y1 = point1.Y;
+        var x2 = point2.X, y2 = point2.Y;
+
+        if (camera !== null && camera.addOffset) {
+            x1 += camera.offset.X; y1 += camera.offset.Y;
+            x2 += camera.offset.X; y2 += camera.offset.Y;
+        }
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(x1, y1);
+        this.ctx.lineTo(x2, y2);
+        this.ctx.stroke();
+        this.ctx.setLineDash([]);
+        this.ctx.globalAlpha = 1.0;
+        return true;
+    }
+
+    /**
+     * Draw a dashed polyline through an array of points
+     * @param {Point[]} points - array of {X, Y} points
+     * @param {number} lineWidth
+     * @param {string} color
+     * @param {number} opacity
+     * @param {number[]} dashPattern
+     * @param {Camera} camera
+     */
+    dashedPath(points, lineWidth = 2, color = 'red', opacity = 1, dashPattern = [4, 4], camera = null) {
+        if (!points || points.length < 2) return false;
+        this.ctx.strokeStyle = color;
+        this.ctx.lineWidth = lineWidth;
+        this.ctx.globalAlpha = opacity;
+        this.ctx.setLineDash(dashPattern);
+
+        var ox = (camera !== null && camera.addOffset) ? camera.offset.X : 0;
+        var oy = (camera !== null && camera.addOffset) ? camera.offset.Y : 0;
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(points[0].X + ox, points[0].Y + oy);
+        for (var i = 1; i < points.length; i++) {
+            this.ctx.lineTo(points[i].X + ox, points[i].Y + oy);
+        }
+        this.ctx.stroke();
+        this.ctx.setLineDash([]);
         this.ctx.globalAlpha = 1.0;
         return true;
     }
@@ -434,6 +527,42 @@ class Drawer {
     }
 
     /**
+     * Draw a filled or stroked polygon from an array of points
+     * @param {Point[]} points - array of {X, Y} vertices (at least 3)
+     * @param {boolean} filled
+     * @param {number} lineWidth
+     * @param {string} color
+     * @param {number} opacity
+     * @param {Camera} camera
+     * @returns {boolean}
+     */
+    polygon(points, filled = true, lineWidth = 1, color = 'red', opacity = 1, camera = null) {
+        if (!points || points.length < 3) return false;
+        this.ctx.strokeStyle = color;
+        this.ctx.fillStyle = color;
+        this.ctx.lineWidth = lineWidth;
+        this.ctx.globalAlpha = opacity;
+
+        var ox = (camera !== null && camera.addOffset) ? camera.offset.X : 0;
+        var oy = (camera !== null && camera.addOffset) ? camera.offset.Y : 0;
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(points[0].X + ox, points[0].Y + oy);
+        for (var i = 1; i < points.length; i++) {
+            this.ctx.lineTo(points[i].X + ox, points[i].Y + oy);
+        }
+        this.ctx.closePath();
+
+        if (filled) {
+            this.ctx.fill();
+        } else {
+            this.ctx.stroke();
+        }
+        this.ctx.globalAlpha = 1.0;
+        return true;
+    }
+
+    /**
      * Color a gredient Regtangle
      * @param {Position} position 
      * @param {Size} size 
@@ -568,5 +697,32 @@ class Drawer {
      */
     drawFlipped(sprite, position, flipX = false, flipY = false, opacity = 1) {
         return this.drawScaled(sprite, position, flipX ? -1 : 1, flipY ? -1 : 1, opacity);
+    }
+
+    /**
+     * Draw a sub-region of an image with rotation around its center
+     * @param {Image} image - source image
+     * @param {number} sx - source X
+     * @param {number} sy - source Y
+     * @param {number} sw - source width
+     * @param {number} sh - source height
+     * @param {Vec2} position - destination top-left in world coords
+     * @param {number} dw - destination width
+     * @param {number} dh - destination height
+     * @param {number} angle - rotation in radians (around center)
+     * @param {number} opacity
+     * @returns {boolean}
+     */
+    drawRegionRotated(image, sx, sy, sw, sh, position, dw, dh, angle, opacity = 1) {
+        if (!image) return false;
+        this.ctx.save();
+        this.ctx.globalAlpha = opacity;
+        var cx = position.X + dw / 2;
+        var cy = position.Y + dh / 2;
+        this.ctx.translate(cx, cy);
+        this.ctx.rotate(angle);
+        this.ctx.drawImage(image, sx, sy, sw, sh, -dw / 2, -dh / 2, dw, dh);
+        this.ctx.restore();
+        return true;
     }
 }

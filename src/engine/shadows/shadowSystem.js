@@ -11,6 +11,7 @@ class ShadowSystem {
         this.shadowColor = 'black';
         this.shadowOpacity = 0.4;
         this.blur = 4;
+        this.simple = false; // true = fast flat shadows (no offscreen canvas/blur)
         this._shadowCanvas = null;
         this._shadowCtx = null;
     }
@@ -111,6 +112,15 @@ class ShadowSystem {
      * @param {Camera} [camera] - optional camera for world-space offset
      */
     draw(camera) {
+        // Skip if shadows are invisible
+        if (this.shadowOpacity < 0.01) return;
+
+        // Simple mode: flat shadows drawn directly (no offscreen canvas, no blur)
+        if (this.simple) {
+            this._drawSimple(camera);
+            return;
+        }
+
         this._ensureCanvas();
 
         var ctx = this._shadowCtx;
@@ -120,10 +130,16 @@ class ShadowSystem {
         // Clear shadow canvas
         ctx.clearRect(0, 0, w, h);
 
+        // Camera zoom support
+        var zoom = (camera && typeof camera.getZoom === 'function') ? camera.getZoom() : 1;
+        var useWorldCamera = camera && camera.location && typeof camera.getZoom === 'function';
+        var hw = camera ? camera.cameraSize.width / 2 : 0;
+        var hh = camera ? camera.cameraSize.height / 2 : 0;
+
         // Compute shadow direction (opposite of light angle)
         var angleRad = this.lightAngle * Math.PI / 180;
-        var baseDx = Math.cos(angleRad + Math.PI) * this.shadowLength;
-        var baseDy = Math.sin(angleRad + Math.PI) * this.shadowLength;
+        var baseDx = Math.cos(angleRad + Math.PI) * this.shadowLength * zoom;
+        var baseDy = Math.sin(angleRad + Math.PI) * this.shadowLength * zoom;
 
         // Draw all shadows solid on offscreen canvas
         ctx.globalCompositeOperation = 'source-over';
@@ -139,15 +155,23 @@ class ShadowSystem {
 
             var sx = caster.position.X;
             var sy = caster.position.Y;
+            var cw = caster.size.width;
+            var ch = caster.size.height;
 
-            // Apply camera offset
-            if (camera && camera.addOffset) {
+            // Apply camera transform (zoom-aware or legacy offset)
+            if (useWorldCamera) {
+                sx = hw + (sx - camera.location.X) * zoom;
+                sy = hh + (sy - camera.location.Y) * zoom;
+                cw *= zoom;
+                ch *= zoom;
+            } else if (camera && camera.addOffset) {
                 sx += camera.offset.X;
                 sy += camera.offset.Y;
             }
 
-            var cw = caster.size.width;
-            var ch = caster.size.height;
+            // Frustum culling — skip if shadow is fully off-screen
+            var maxDim = Math.max(cw, ch) + Math.abs(dx) + Math.abs(dy);
+            if (sx + maxDim < 0 || sx - maxDim > w || sy + maxDim < 0 || sy - maxDim > h) continue;
 
             if (caster.type === 'ellipse') {
                 this._drawEllipseShadow(ctx, sx, sy, cw, ch, dx, dy, angleRad);
@@ -165,5 +189,60 @@ class ShadowSystem {
         }
         mainCtx.drawImage(this._shadowCanvas, 0, 0);
         mainCtx.restore();
+    }
+
+    /**
+     * Fast flat shadows — draws simple offset ellipses/rectangles directly.
+     * No offscreen canvas, no blur, no compositing overhead.
+     * @param {Camera} camera
+     */
+    _drawSimple(camera) {
+        var ctx = this.engine.drawer.ctx;
+        var angleRad = this.lightAngle * Math.PI / 180;
+        var baseDx = Math.cos(angleRad + Math.PI) * this.shadowLength;
+        var baseDy = Math.sin(angleRad + Math.PI) * this.shadowLength;
+
+        var hasTransform = camera && typeof camera.applyTransform === 'function';
+        if (hasTransform) {
+            this.engine.drawer.beginCamera(camera);
+        }
+
+        ctx.fillStyle = 'rgba(0,0,0,' + this.shadowOpacity + ')';
+
+        for (var i = 0; i < this.casters.length; i++) {
+            var caster = this.casters[i];
+            if (!caster.active) continue;
+
+            var dx = baseDx * caster.heightScale;
+            var dy = baseDy * caster.heightScale;
+
+            if (caster.type === 'ellipse') {
+                var cx = caster.position.X + caster.size.width / 2 + dx;
+                var cy = caster.position.Y + caster.size.height + dy * 0.3;
+                var rx = caster.size.width * 0.5;
+                var ry = caster.size.height * 0.2;
+                ctx.beginPath();
+                ctx.ellipse(cx, cy, rx, ry, angleRad + Math.PI, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                var rcx = caster.position.X + caster.size.width / 2 + dx;
+                var rcy = caster.position.Y + caster.size.height / 2 + dy * 0.3;
+                var rw = caster.size.width;
+                var rh = caster.size.height;
+                if (caster.rotation) {
+                    ctx.save();
+                    ctx.translate(rcx, rcy);
+                    ctx.rotate(caster.rotation);
+                    ctx.fillRect(-rw / 2, -rh / 2, rw, rh);
+                    ctx.restore();
+                } else {
+                    ctx.fillRect(rcx - rw / 2, rcy - rh / 2, rw, rh);
+                }
+            }
+        }
+
+        if (hasTransform) {
+            this.engine.drawer.endCamera();
+        }
     }
 }
