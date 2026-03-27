@@ -199,8 +199,9 @@ class ShadowSystem {
     _drawSimple(camera) {
         var ctx = this.engine.drawer.ctx;
         var angleRad = this.lightAngle * Math.PI / 180;
-        var baseDx = Math.cos(angleRad + Math.PI) * this.shadowLength;
-        var baseDy = Math.sin(angleRad + Math.PI) * this.shadowLength;
+        // Shadow direction (unit vector, pointing away from light)
+        var dirX = Math.cos(angleRad + Math.PI);
+        var dirY = Math.sin(angleRad + Math.PI);
 
         var hasTransform = camera && typeof camera.applyTransform === 'function';
         if (hasTransform) {
@@ -213,32 +214,29 @@ class ShadowSystem {
             var caster = this.casters[i];
             if (!caster.active) continue;
 
-            var dx = baseDx * caster.heightScale;
-            var dy = baseDy * caster.heightScale;
+            var bx = caster.position.X;
+            var by = caster.position.Y;
+            var bw = caster.size.width;
+            var bh = caster.size.height;
+            var len = this.shadowLength * caster.heightScale;
+            var sdx = dirX * len;
+            var sdy = dirY * len;
 
-            if (caster.type === 'ellipse') {
-                var cx = caster.position.X + caster.size.width / 2 + dx;
-                var cy = caster.position.Y + caster.size.height + dy * 0.3;
-                var rx = caster.size.width * 0.5;
-                var ry = caster.size.height * 0.2;
-                ctx.beginPath();
-                ctx.ellipse(cx, cy, rx, ry, angleRad + Math.PI, 0, Math.PI * 2);
-                ctx.fill();
-            } else {
-                var rcx = caster.position.X + caster.size.width / 2 + dx;
-                var rcy = caster.position.Y + caster.size.height / 2 + dy * 0.3;
-                var rw = caster.size.width;
-                var rh = caster.size.height;
-                if (caster.rotation) {
-                    ctx.save();
-                    ctx.translate(rcx, rcy);
-                    ctx.rotate(caster.rotation);
-                    ctx.fillRect(-rw / 2, -rh / 2, rw, rh);
-                    ctx.restore();
-                } else {
-                    ctx.fillRect(rcx - rw / 2, rcy - rh / 2, rw, rh);
-                }
-            }
+            // Simple ground shadow: offset rectangle clamped to building base.
+            // Shadow rect is same size as building, shifted by shadow direction,
+            // but clamped so it always overlaps the building edge (no gap).
+            var sx = bx + Math.max(0, sdx);
+            var sy = by + Math.max(0, sdy);
+            var ex = bx + bw + Math.min(0, sdx);
+            var ey = by + bh + Math.min(0, sdy);
+
+            // The shadow area = building footprint expanded in the shadow direction
+            var left   = Math.min(bx, bx + sdx);
+            var top    = Math.min(by, by + sdy);
+            var right  = Math.max(bx + bw, bx + bw + sdx);
+            var bottom = Math.max(by + bh, by + bh + sdy);
+
+            ctx.fillRect(left, top, right - left, bottom - top);
         }
 
         if (hasTransform) {
